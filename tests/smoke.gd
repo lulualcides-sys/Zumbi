@@ -34,6 +34,9 @@ func _run() -> void:
         scene._animate_survivor(0.016)
         var actual_player: AnimationPlayer = scene.player_art.get("player")
         all_passed = _check(actual_player != null and actual_player.is_playing(), "AnimationPlayer do sobrevivente nao iniciou") and all_passed
+        if scene.player_art.get("tactical", false) and actual_player != null:
+            var clip := actual_player.current_animation.to_lower()
+            all_passed = _check("crouch" not in clip and ("aim_idle" in clip or "ready_idle" in clip), "Stand idle incorrectly selected crouching clip: " + clip) and all_passed
     if ResourceLoader.exists("res://assets/cc0/survivor.gltf"):
         all_passed = _check(not scene.player_art.is_empty(), "Soldado CC0 nao substituiu o modelo geometrico") and all_passed
         all_passed = _check(scene.player_art.has("root") and is_instance_valid(scene.player_art["root"]), "GLTF do sobrevivente nao carregado") and all_passed
