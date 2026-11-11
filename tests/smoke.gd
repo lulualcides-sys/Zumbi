@@ -108,6 +108,24 @@ func _run() -> void:
     scene._hurt_zombie(target, hp_before)
     all_passed = _check(scene.score == score_before + 1 and not scene.zombie_state.has(target), "Zombie nao morreu ao receber dano letal") and all_passed
 
+    # Real gunfire must reach the *low* wooden fence. Previous horizontal
+    # bullets left the muzzle above its collision box and never damaged it.
+    var centered_fence: StaticBody3D = null
+    for body in scene.destructibles.keys():
+        if body is StaticBody3D and absf(body.position.z + 3.15) < 0.1 and absf(body.position.x) < 0.3:
+            centered_fence = body
+            break
+    all_passed = _check(centered_fence != null, "No centered fence for ballistics QA") and all_passed
+    if centered_fence != null:
+        var fence_hp_before: int = scene.destructibles[centered_fence]["health"]
+        scene.fire_cooldown = 0.0
+        scene.reload_timer = 0.0
+        scene.aim_point = centered_fence.global_position
+        scene._fire()
+        all_passed = _check(scene.destructibles.has(centered_fence) and
+            int(scene.destructibles[centered_fence]["health"]) == fence_hp_before - 1,
+            "Real muzzle shot passed OVER the wooden fence instead of damaging it") and all_passed
+
     # Fragmentacao: remover o obstaculo nao deixa corpo com HP ativo.
     var prop = scene.destructibles.keys()[0]
     var prop_health: int = scene.destructibles[prop]["health"]
