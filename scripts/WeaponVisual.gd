@@ -58,6 +58,9 @@ static func attach(body: CharacterBody3D) -> Dictionary:
     var holder := Node3D.new()
     holder.name = "VisibleRifleMount"
     holder.position = RIFLE_OFFSET
+    # Tilt barrel into the imported rifle-ready hand pose; previous weapon
+    # pointed toward the ground despite the arms being raised.
+    holder.rotation.x = -0.28
     body.add_child(holder)
 
     var source_ok := false
