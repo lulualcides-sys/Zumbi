@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'scripts/**'
+      - 'tools/install_cc0_art.py'
       - 'scenes/**'
       - 'tests/**'
       - 'project.godot'
@@ -36,6 +37,8 @@ jobs:
           version: 4.7.2
           use-dotnet: false
           include-templates: true
+      - name: Install verified CC0 game models
+        run: python3 tools/install_cc0_art.py
       - name: Import project and validate scripts
         run: godot --headless --editor --path . --import --quit
       - name: Run smoke test

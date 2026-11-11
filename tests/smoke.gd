@@ -21,6 +21,9 @@ func _run() -> void:
     all_passed = _check(scene.player != null and scene.camera != null, "Jogador/camera ausentes") and all_passed
     all_passed = _check(scene.camera.projection == Camera3D.PROJECTION_ORTHOGONAL, "Camera 3/4 do video nao configurada") and all_passed
     all_passed = _check(scene.player_rig.has("muzzle") and scene.player_rig.has("left_leg"), "Soldado sem rig ou cano") and all_passed
+    if ResourceLoader.exists("res://assets/cc0/survivor.gltf"):
+        all_passed = _check(not scene.player_art.is_empty(), "Soldado CC0 nao substituiu o modelo geometrico") and all_passed
+        all_passed = _check(scene.player_art.has("root") and is_instance_valid(scene.player_art["root"]), "GLTF do sobrevivente nao carregado") and all_passed
     all_passed = _check(scene.wave == 1 and scene.pending_spawns > 0, "Sistema de ondas nao iniciou") and all_passed
     all_passed = _check(scene.destructibles.size() >= 4, "Cercas ou objetos destrutiveis ausentes") and all_passed
 
@@ -40,6 +43,8 @@ func _run() -> void:
     # Dano e abate efetivo de inimigo.
     scene._spawn_zombie()
     var target = scene.zombies.back()
+    if ResourceLoader.exists("res://assets/cc0/zombie_basic.gltf"):
+        all_passed = _check(scene.zombie_state[target].get("art", {}).has("root"), "Zombie CC0 nao importado") and all_passed
     var hp_before: int = scene.zombie_state[target]["health"]
     var score_before: int = scene.score
     scene._hurt_zombie(target, hp_before)
@@ -56,5 +61,5 @@ func _run() -> void:
     if not all_passed:
         quit(1)
         return
-    print("SMOKE_OK: camera 3/4, rig 3D, ondas, dano, recarga e cercas destrutiveis")
+    print("SMOKE_OK: camera 3/4, CC0 animated models, ondas, dano, recarga e cercas destrutiveis")
     quit(0)
