@@ -20,6 +20,18 @@ func _run() -> void:
     var all_passed := true
     all_passed = _check(scene.player != null and scene.camera != null, "Jogador/camera ausentes") and all_passed
     all_passed = _check(scene.camera.projection == Camera3D.PROJECTION_ORTHOGONAL, "Camera 3/4 do video nao configurada") and all_passed
+    all_passed = _check(scene.aim_direction.distance_to(Vector3.FORWARD) < 0.01, "Direcao inicial deve mirar na cerca ao norte") and all_passed
+    all_passed = _check(absf(absf(scene.player.rotation.y) - PI) < 0.05, "Soldado inicia olhando para fora da referencia") and all_passed
+    all_passed = _check(not scene.has_player_aim_input, "Mouse nao movido nao deve desviar a arma na primeira tela") and all_passed
+    var gun_forward: Vector3 = scene.weapon_rig.get("mount").global_transform.basis.z
+    gun_forward.y = 0.0
+    all_passed = _check(gun_forward.normalized().dot(scene.aim_direction) > 0.98, "Arma fisica e tiro inicial apontam direcoes diferentes") and all_passed
+    var fence_screen: Vector2 = scene.camera.unproject_position(Vector3(0.0, 0.65, -3.15))
+    var player_screen: Vector2 = scene.camera.unproject_position(scene.player.global_position)
+    var window_size := Vector2(root.size)
+    all_passed = _check(fence_screen.y > window_size.y * 0.06 and fence_screen.y < player_screen.y - 30.0,
+        "Cerca cortada ou abaixo do jogador no enquadramento inicial") and all_passed
+
     all_passed = _check(scene.player_rig.has("muzzle") and scene.player_rig.has("left_leg"), "Soldado sem rig ou cano") and all_passed
     all_passed = _check(scene.weapon_rig.has("mount") and scene.weapon_rig.has("muzzle"), "Rifle 3D nao equipado") and all_passed
     var gun_mount: Node3D = scene.weapon_rig.get("mount")
@@ -45,7 +57,7 @@ func _run() -> void:
         all_passed = _check(actual_player != null and actual_player.is_playing(), "AnimationPlayer do sobrevivente nao iniciou") and all_passed
         if scene.player_art.get("tactical", false) and actual_player != null:
             var clip := actual_player.current_animation.to_lower()
-            all_passed = _check("crouch" not in clip and ("aim_idle" in clip or "ready_idle" in clip), "Stand idle incorrectly selected crouching clip: " + clip) and all_passed
+            all_passed = _check(clip == "idle", "Soldado parado deve iniciar com os pes apoiados: " + clip) and all_passed
     if ResourceLoader.exists("res://assets/cc0/survivor.gltf"):
         all_passed = _check(not scene.player_art.is_empty(), "Soldado CC0 nao substituiu o modelo geometrico") and all_passed
         all_passed = _check(scene.player_art.has("root") and is_instance_valid(scene.player_art["root"]), "GLTF do sobrevivente nao carregado") and all_passed
@@ -95,6 +107,24 @@ func _run() -> void:
     var score_before: int = scene.score
     scene._hurt_zombie(target, hp_before)
     all_passed = _check(scene.score == score_before + 1 and not scene.zombie_state.has(target), "Zombie nao morreu ao receber dano letal") and all_passed
+
+    # Real gunfire must reach the *low* wooden fence. Previous horizontal
+    # bullets left the muzzle above its collision box and never damaged it.
+    var centered_fence: StaticBody3D = null
+    for body in scene.destructibles.keys():
+        if body is StaticBody3D and absf(body.position.z + 3.15) < 0.1 and absf(body.position.x) < 1.1:
+            centered_fence = body
+            break
+    all_passed = _check(centered_fence != null, "No centered fence for ballistics QA") and all_passed
+    if centered_fence != null:
+        var fence_hp_before: int = scene.destructibles[centered_fence]["health"]
+        scene.fire_cooldown = 0.0
+        scene.reload_timer = 0.0
+        scene.aim_point = centered_fence.global_position
+        scene._fire()
+        all_passed = _check(scene.destructibles.has(centered_fence) and
+            int(scene.destructibles[centered_fence]["health"]) == fence_hp_before - 1,
+            "Real muzzle shot passed OVER the wooden fence instead of damaging it") and all_passed
 
     # Fragmentacao: remover o obstaculo nao deixa corpo com HP ativo.
     var prop = scene.destructibles.keys()[0]

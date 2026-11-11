@@ -47,7 +47,11 @@ static func _grade_rifle(root: Node3D) -> void:
         if visual.mesh == null:
             continue
         for surface in range(visual.mesh.get_surface_count()):
-            var imported := visual.get_active_material(surface)
+            var imported: Material = visual.get_surface_override_material(surface)
+            if imported == null:
+                imported = visual.mesh.surface_get_material(surface)
+            if imported == null:
+                imported = visual.material_override
             var texture: Texture2D = white_tex
             if imported is BaseMaterial3D and imported.albedo_texture != null:
                 texture = imported.albedo_texture

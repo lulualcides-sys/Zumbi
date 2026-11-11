@@ -15,7 +15,8 @@ const MAG_SIZE := 32
 const MAX_ENEMIES := 14
 const WORLD_LIMIT := 17.0
 const MOBILE_AUTO_RANGE := 14.0
-const CAMERA_OFFSET := Vector3(1.8, 20.5, 6.4)
+const CAMERA_OFFSET := Vector3(0.0, 16.0, 8.2)
+const CAMERA_LOOK_AHEAD := Vector3(0.0, 0.0, -1.20)
 
 var rng := RandomNumberGenerator.new()
 var player: CharacterBody3D
@@ -32,6 +33,8 @@ var zombies: Array[CharacterBody3D] = []
 var destructibles: Dictionary = {}
 var pickups: Array[Node3D] = []
 var aim_direction := Vector3.FORWARD
+var aim_point := Vector3(0.0, 0.75, -3.15)
+var has_player_aim_input := false
 var ammo := MAG_SIZE
 var reserve_ammo := 160
 var hp := 100
@@ -64,16 +67,16 @@ func _environment() -> void:
     var world := WorldEnvironment.new()
     var env := Environment.new()
     env.background_mode = Environment.BG_COLOR
-    env.background_color = Color("#16262e")
+    env.background_color = Color("#101c26")
     env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    env.ambient_light_color = Color("#849eab")
-    env.ambient_light_energy = 0.54
+    env.ambient_light_color = Color("#8798a4")
+    env.ambient_light_energy = 0.48
     world.environment = env
     add_child(world)
     var moon := DirectionalLight3D.new()
-    moon.rotation_degrees = Vector3(-57, -31, 0)
+    moon.rotation_degrees = Vector3(-73, -31, 0)
     moon.light_color = Color("#d5e7ee")
-    moon.light_energy = 1.20
+    moon.light_energy = 1.08
     moon.shadow_enabled = true
     add_child(moon)
 
@@ -140,10 +143,10 @@ func _street_lamp(at: Vector3) -> void:
 func _level() -> void:
     # Reference-first staging yard: dark desaturated blue, faint grid,
     # sparse obstacles. Remove the neon road paint and blue cartoon barrels.
-    var ground := _solid_box(Vector3(0, -0.36, 0), Vector3(40, 0.72, 40), Color("#263944"))
+    var ground := _solid_box(Vector3(0, -0.36, 0), Vector3(40, 0.72, 40), Color("#1a2d3b"))
     var ground_visual: MeshInstance3D = ground.get_child(1) as MeshInstance3D
     var ground_mat := StandardMaterial3D.new()
-    ground_mat.albedo_color = Color("#233642")
+    ground_mat.albedo_color = Color("#182b39")
     ground_mat.roughness = 0.94
     ground_visual.material_override = ground_mat
 
@@ -151,12 +154,12 @@ func _level() -> void:
     # These lines have no collider and cannot block the player or bullets.
     for i in range(-10, 11):
         var x := float(i) * 2.0
-        _visual_box(self, Vector3(x, 0.018, 0.0), Vector3(0.014, 0.009, 39.0), Color("#2d4655"))
-        _visual_box(self, Vector3(0.0, 0.019, x), Vector3(39.0, 0.009, 0.014), Color("#2d4655"))
+        _visual_box(self, Vector3(x, 0.018, 0.0), Vector3(0.011, 0.009, 39.0), Color("#22394a"))
+        _visual_box(self, Vector3(0.0, 0.019, x), Vector3(39.0, 0.009, 0.011), Color("#22394a"))
 
     # One readable destructible wooden fence is enough for the initial view.
-    for i in range(3):
-        _fence_segment(Vector3(-2.05 + float(i) * 1.90, 0.60, -4.20))
+    for i in range(2):
+        _fence_segment(Vector3(-0.95 + float(i) * 1.90, 0.60, -3.15))
     # Secondary props occupy the far edges so the character remains focal.
     _solid_box(Vector3(-10.8, 0.56, -9.0), Vector3(2.3, 1.12, 1.4), Color("#51616a"), 6)
     _solid_box(Vector3(10.2, 0.45, 7.6), Vector3(1.0, 0.90, 1.1), Color("#4d5a5a"), 4)
@@ -174,6 +177,8 @@ func _create_player() -> void:
     player = CharacterBody3D.new()
     player.name = "Survivor"
     player.position = Vector3(0, 0.88, 0)
+    # Reference opens with the rifle pointing at the fence, not downscreen.
+    player.rotation.y = PI
     add_child(player)
     player_rig = Models.survivor(player)
     player_art = Artwork.attach_character(player, player_rig, "survivor")
@@ -184,26 +189,27 @@ func _create_camera() -> void:
     camera = Camera3D.new()
     camera.name = "ThreeQuarterCamera"
     camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-    camera.size = 8.8
+    camera.size = _camera_vertical_size()
     camera.near = 0.1
     camera.far = 110.0
     camera.current = true
     add_child(camera)
-    camera.global_position = player.global_position + CAMERA_OFFSET
-    camera.look_at(player.global_position)
+    var first_look := _camera_focus_offset()
+    camera.global_position = player.global_position + CAMERA_OFFSET + first_look
+    camera.look_at(player.global_position + first_look)
 
 func _create_ui() -> void:
     var layer := CanvasLayer.new()
     add_child(layer)
     var panel := ColorRect.new()
-    panel.color = Color(0.035, 0.09, 0.12, 0.54)
+    panel.color = Color(0.035, 0.09, 0.12, 0.38)
     panel.position = Vector2(14, 14)
-    panel.size = Vector2(310, 97)
+    panel.size = Vector2(280, 91)
     layer.add_child(panel)
     hud = Label.new()
     hud.position = Vector2(30, 23)
     hud.add_theme_color_override("font_color", Color("#e3efe9"))
-    hud.add_theme_font_size_override("font_size", 17)
+    hud.add_theme_font_size_override("font_size", 15)
     layer.add_child(hud)
     footer = Label.new()
     footer.anchor_top = 1.0
@@ -246,6 +252,8 @@ func _refresh_control_labels() -> void:
         reticle.visible = true
 
 func _input(event: InputEvent) -> void:
+    if (event is InputEventMouseMotion or event is InputEventMouseButton) and not _mobile_enabled():
+        has_player_aim_input = true
     if hp <= 0 and _mobile_enabled() and event is InputEventScreenTouch and event.pressed:
         get_tree().reload_current_scene()
 
@@ -266,7 +274,7 @@ func _physics_process(delta: float) -> void:
             _finish_reload()
     _move_player(delta)
     _update_camera(delta)
-    if not _mobile_enabled():
+    if not _mobile_enabled() and has_player_aim_input:
         _aim_at_mouse()
     _animate_survivor(delta)
     _move_zombies(delta)
@@ -320,11 +328,23 @@ func _move_player(delta: float) -> void:
     player.velocity.y -= 24.0 * delta
     player.move_and_slide()
 
+func _camera_vertical_size() -> float:
+    var dimensions := get_viewport().get_visible_rect().size
+    # Orthographic camera "size" is its vertical world coverage.
+    # Keeping the 16:9 value in portrait cropped the entire picket fence.
+    return 16.0 if dimensions.y > dimensions.x else 8.8
+
+func _camera_focus_offset() -> Vector3:
+    var dimensions := get_viewport().get_visible_rect().size
+    return Vector3(0.0, 0.0, -0.35) if dimensions.y > dimensions.x else CAMERA_LOOK_AHEAD
+
 func _update_camera(delta: float) -> void:
-    # Camera independente da rotacao do soldado; trava a mesma inclinacao do video.
-    var location := player.global_position + CAMERA_OFFSET
+    # Follow independent of soldier yaw and adapt to actual screen orientation.
+    var focus := _camera_focus_offset()
+    var location := player.global_position + CAMERA_OFFSET + focus
     camera.global_position = camera.global_position.lerp(location, minf(1.0, delta * 7.0))
-    camera.look_at(player.global_position)
+    camera.look_at(player.global_position + focus)
+    camera.size = _camera_vertical_size()
 
 func _aim_at_mouse() -> void:
     var origin := camera.project_ray_origin(get_viewport().get_mouse_position())
@@ -335,6 +355,7 @@ func _aim_at_mouse() -> void:
     if distance <= 0.0:
         return
     var point := origin + direction * distance
+    aim_point = point
     var heading := point - player.global_position
     heading.y = 0
     if heading.length_squared() > 0.02:
@@ -377,6 +398,8 @@ func _mobile_auto_combat() -> void:
     if vector.length_squared() < 0.0001:
         return
     aim_direction = vector.normalized()
+    # Shoot toward actual zombie body height instead of a flat horizontal ray.
+    aim_point = target.global_position + Vector3(0.0, 0.22, 0.0)
     player.rotation.y = atan2(aim_direction.x, aim_direction.z)
     if fire_cooldown <= 0.0 and reload_timer <= 0.0:
         _fire()
@@ -413,7 +436,13 @@ func _fire() -> void:
     # from the invisible placeholder rifle in the procedural fallback.
     var muzzle: Marker3D = weapon_rig["muzzle"]
     var start: Vector3 = muzzle.global_position
-    var destination := start + aim_direction * 31.0
+    # A horizontal trace from shoulder height skipped the low destructible
+    # fence and sometimes missed zombie capsules. Aim from the *real* muzzle
+    # down toward the selected world target, preserving the exact tracer path.
+    var trace_vector := aim_point - start
+    if trace_vector.length_squared() < 0.04:
+        trace_vector = aim_direction
+    var destination := start + trace_vector.normalized() * 31.0
     var query := PhysicsRayQueryParameters3D.create(start, destination)
     query.exclude = [player.get_rid()]
     var result: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
