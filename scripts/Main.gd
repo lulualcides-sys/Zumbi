@@ -15,7 +15,7 @@ const MAG_SIZE := 32
 const MAX_ENEMIES := 14
 const WORLD_LIMIT := 17.0
 const MOBILE_AUTO_RANGE := 14.0
-const CAMERA_OFFSET := Vector3(0.0, 20.5, 5.0)
+const CAMERA_OFFSET := Vector3(0.0, 16.0, 8.2)
 const CAMERA_LOOK_AHEAD := Vector3(0.0, 0.0, -1.20)
 
 var rng := RandomNumberGenerator.new()
