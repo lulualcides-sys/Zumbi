@@ -1,0 +1,39 @@
+name: Godot 4 Zombie Outbreak - validation and web build
+
+on:
+  push:
+    branches: [main, feat/godot-zombie-prototype]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot and web export templates on CI runner
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: true
+      - name: Verify Godot version
+        run: godot --version
+      - name: Import project and parse scripts
+        run: godot --headless --editor --path . --import --quit
+      - name: Run scripted scene smoke test
+        run: godot --headless --path . --script res://tests/smoke.gd
+      - name: Export browser version
+        run: |
+          mkdir -p build
+          godot --headless --path . --export-release "Web" build/index.html
+      - name: Save Web build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zombie-outbreak-godot-web
+          path: build/
+          if-no-files-found: error
