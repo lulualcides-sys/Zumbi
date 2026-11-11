@@ -39,6 +39,8 @@ jobs:
           include-templates: true
       - name: Install verified CC0 game models
         run: python3 tools/install_cc0_art.py
+      - name: Install and inspect licensed tactical soldier
+        run: python3 tools/install_tactical_art.py
       - name: Import project and validate scripts
         run: godot --headless --editor --path . --import --quit
       - name: Run smoke test

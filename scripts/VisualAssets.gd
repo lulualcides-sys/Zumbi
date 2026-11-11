@@ -1,6 +1,7 @@
 extends RefCounted
 ## Import and animate CC0 Quaternius GLTF models with a procedural fallback.
 const MODEL_ROOT := "res://assets/cc0/"
+const TACTICAL_SOLDIER := "res://assets/tactical/soldier.glb"
 
 static func _path(kind: String, variation: int = 0) -> String:
     if kind == "survivor":
@@ -17,8 +18,30 @@ static func _find_animation_player(root: Node) -> AnimationPlayer:
             return found
     return null
 
+static func _grade_character(root: Node3D, shader_path: String) -> void:
+    # Preserve imported UVs and animated skeleton, recolor texture only.
+    var shader := load(shader_path) as Shader
+    if shader == null:
+        return
+    for node in root.find_children("*", "MeshInstance3D", true, false):
+        var visual := node as MeshInstance3D
+        if visual.mesh == null:
+            continue
+        for surface in range(visual.mesh.get_surface_count()):
+            var original := visual.get_active_material(surface)
+            if original is BaseMaterial3D:
+                var texture: Texture2D = original.albedo_texture
+                if texture == null:
+                    continue
+                var graded := ShaderMaterial.new()
+                graded.shader = shader
+                graded.set_shader_parameter("base_texture", texture)
+                visual.set_surface_override_material(surface, graded)
+
 static func attach_character(body: CharacterBody3D, existing_rig: Dictionary, kind: String, variation: int = 0) -> Dictionary:
     var path := _path(kind, variation)
+    if kind == "survivor" and ResourceLoader.exists(TACTICAL_SOLDIER):
+        path = TACTICAL_SOLDIER
     if not ResourceLoader.exists(path):
         return {}
     var packed := load(path) as PackedScene
@@ -31,7 +54,13 @@ static func attach_character(body: CharacterBody3D, existing_rig: Dictionary, ki
         return {}
     model.name = "Art_CC0_" + kind
     model.position = Vector3(0.0, -0.87, 0.0)
+    if path == TACTICAL_SOLDIER:
+        model.name = "TacticalSoldierAnimated"
     body.add_child(model)
+    if kind == "zombie":
+        _grade_character(model, "res://shaders/zombie_grade.gdshader")
+    elif path == TACTICAL_SOLDIER:
+        _grade_character(model, "res://shaders/tactical_armor.gdshader")
     var old_visual: Node3D = existing_rig.get("visual")
     if old_visual != null:
         old_visual.visible = false
@@ -42,7 +71,7 @@ static func attach_character(body: CharacterBody3D, existing_rig: Dictionary, ki
             available.append(str(name))
         if available.size() > 0:
             animator.play(available[0])
-    return {"root": model, "player": animator, "animations": available, "active": "", "path": path}
+    return {"root": model, "player": animator, "animations": available, "active": "", "path": path, "tactical": path == TACTICAL_SOLDIER}
 
 static func animate(rig: Dictionary, state: String, running: bool = false) -> void:
     if rig.is_empty():
@@ -50,31 +79,51 @@ static func animate(rig: Dictionary, state: String, running: bool = false) -> vo
     var player: AnimationPlayer = rig.get("player")
     if player == null:
         return
-    var names: Array = rig.get("animations", [])
+    var available: Array = rig.get("animations", [])
+    var tactical: bool = rig.get("tactical", false)
     var preferred: Array = []
     match state:
         "walk":
-            preferred = ["run_gun", "run", "sprint", "jog", "walk"] if running else ["walk_gun", "walk", "jog", "run"]
+            if tactical:
+                preferred = ["aim_run", "ready_run", "run", "mocap_run_F", "aim_walk"] if running else ["aim_walk", "ready_walk", "walk", "mocap_walk_F"]
+            else:
+                preferred = ["run_gun", "run", "walk_gun", "walk"] if running else ["walk_gun", "walk", "run"]
         "attack":
-            preferred = ["shoot", "fire", "attack", "rifle"]
+            preferred = ["shoot", "aim_idle", "ready_idle", "idle_gun", "idle"]
         "death":
             preferred = ["death", "die", "dead"]
+        "reload":
+            preferred = ["reload", "aim_idle", "idle_gun", "idle"]
         _:
-            preferred = ["idle_gun", "idle", "breath", "stand"]
+            preferred = ["aim_idle", "ready_idle", "idle", "idle_gun"] if tactical else ["idle_gun", "idle", "stand"]
+
+    # First select exact clip names; do not match "idle" inside "aim_crouch_idle".
+    # A substring selector made the soldier crouch even while standing still.
     var chosen := ""
-    for prefix in preferred:
-        for name in names:
-            if prefix in str(name).to_lower():
+    for requested in preferred:
+        for name in available:
+            var clean := str(name).to_lower()
+            clean = clean.substr(clean.rfind("/") + 1)
+            if clean == str(requested).to_lower():
                 chosen = str(name)
                 break
         if chosen != "":
             break
     if chosen == "":
+        for requested in preferred:
+            for name in available:
+                var clean := str(name).to_lower()
+                if str(requested).to_lower() in clean and not ("crouch" in clean and state != "crouch"):
+                    chosen = str(name)
+                    break
+            if chosen != "":
+                break
+    if chosen == "":
         return
     if rig.get("active", "") == chosen and player.is_playing():
         return
     rig["active"] = chosen
-    player.play(chosen, 0.16, 1.22 if running else 1.0)
+    player.play(chosen, 0.18, 1.13 if running else 1.0)
 
 static func add_prop(parent: Node3D, filename: String, where: Vector3, scale_factor: float = 1.0, y_rotation: float = 0.0) -> Node3D:
     var allowed := ["barrel.gltf", "pallet.gltf", "traffic_barrier.gltf", "container_green.gltf"]

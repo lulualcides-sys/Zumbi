@@ -3,7 +3,8 @@ extends RefCounted
 ## O glTF Rifle tem cano ao longo do eixo +Z (bounding box verificado).
 ## Sem dependencias de redes em tempo de execucao.
 const RIFLE_PATH := "res://assets/cc0/rifle.gltf"
-const RIFLE_OFFSET := Vector3(0.09, 0.10, 0.43)
+# Raise receiver to the animated tactical rifle-ready pose; previous mount was hip-high.
+const RIFLE_OFFSET := Vector3(0.09, 0.56, 0.43)
 const RIFLE_SCALE := 0.82
 
 static func _metal(tint: Color, glow: bool = false) -> StandardMaterial3D:
@@ -37,10 +38,29 @@ static func _fallback_rifle(root: Node3D) -> void:
     _box(root, Vector3(0, -0.02, 0.70), Vector3(0.08, 0.08, 0.82), Color("#1b2125"))
     _box(root, Vector3(0, 0.08, 0.33), Vector3(0.16, 0.06, 0.35), Color("#5a6267"))
 
+static func _grade_rifle(model: Node3D) -> void:
+    var shader := load("res://shaders/rifle_gunmetal.gdshader") as Shader
+    if shader == null:
+        return
+    for node in model.find_children("*", "MeshInstance3D", true, false):
+        var mesh := node as MeshInstance3D
+        if mesh.mesh == null:
+            continue
+        for surface in range(mesh.mesh.get_surface_count()):
+            var material := mesh.get_active_material(surface)
+            if material is BaseMaterial3D and material.albedo_texture != null:
+                var grade := ShaderMaterial.new()
+                grade.shader = shader
+                grade.set_shader_parameter("base_texture", material.albedo_texture)
+                mesh.set_surface_override_material(surface, grade)
+
 static func attach(body: CharacterBody3D) -> Dictionary:
     var holder := Node3D.new()
     holder.name = "VisibleRifleMount"
     holder.position = RIFLE_OFFSET
+    # Tilt barrel into the imported rifle-ready hand pose; previous weapon
+    # pointed toward the ground despite the arms being raised.
+    holder.rotation.x = -0.28
     body.add_child(holder)
 
     var source_ok := false
@@ -52,6 +72,7 @@ static func attach(body: CharacterBody3D) -> Dictionary:
                 model.name = "VisibleCC0Rifle"
                 model.scale = Vector3.ONE * RIFLE_SCALE
                 holder.add_child(model)
+                _grade_rifle(model)
                 source_ok = true
     if not source_ok:
         _fallback_rifle(holder)
