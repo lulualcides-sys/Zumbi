@@ -95,22 +95,36 @@ func _solid_box(where: Vector3, dimensions: Vector3, color: Color, health: int =
     return object
 
 func _fence_segment(at: Vector3) -> void:
+    # Narrow, peaked wood slats like the destructible fence in the reference.
+    # A single collider remains intentional so the existing damage system works.
     var body := StaticBody3D.new()
     body.position = at
     add_child(body)
     var collider := CollisionShape3D.new()
     var shape := BoxShape3D.new()
-    shape.size = Vector3(1.88, 1.20, 0.25)
+    shape.size = Vector3(1.88, 1.15, 0.20)
     collider.shape = shape
     body.add_child(collider)
-    var planks := Color("#7f5940")
-    for n in range(6):
-        var x := -0.78 + float(n) * 0.31
-        var plank := _visual_box(body, Vector3(x, 0, 0), Vector3(0.24, 1.15, 0.14), planks)
-        plank.rotation.z = rng.randf_range(-0.035, 0.035)
-    _visual_box(body, Vector3(0, 0.32, -0.13), Vector3(1.90, 0.13, 0.16), Color("#65422e"))
-    _visual_box(body, Vector3(0, -0.32, -0.13), Vector3(1.90, 0.13, 0.16), Color("#65422e"))
-    destructibles[body] = {"health": 4, "size": Vector3(1.88, 1.15, 0.22), "tint": planks}
+    var wood := Color("#6d5946")
+    for n in range(9):
+        var x := -0.84 + float(n) * 0.21
+        var tint := wood.lightened(0.03 * float(n % 3))
+        var slat := _visual_box(body, Vector3(x, -0.02, 0.0), Vector3(0.145, 0.91, 0.105), tint)
+        slat.rotation.z = rng.randf_range(-0.011, 0.011)
+        var peak := MeshInstance3D.new()
+        var cone := CylinderMesh.new()
+        cone.top_radius = 0.0
+        cone.bottom_radius = 0.088
+        cone.height = 0.16
+        cone.radial_segments = 4
+        peak.mesh = cone
+        peak.material_override = Models.material(tint)
+        peak.position = Vector3(x, 0.50, 0.0)
+        body.add_child(peak)
+    for z in [-0.19]:
+        _visual_box(body, Vector3(0, 0.29, float(z)), Vector3(1.9, 0.10, 0.14), Color("#513b30"))
+        _visual_box(body, Vector3(0, -0.29, float(z)), Vector3(1.9, 0.10, 0.14), Color("#513b30"))
+    destructibles[body] = {"health": 4, "size": Vector3(1.88, 1.15, 0.20), "tint": wood}
 
 func _street_lamp(at: Vector3) -> void:
     _visual_box(self, at + Vector3(0, 2.15, 0), Vector3(0.17, 4.3, 0.17), Color("#354e55"))
@@ -569,7 +583,10 @@ func _move_zombies(delta: float) -> void:
         var right_leg: Node3D = rig["right_leg"]
         left_leg.rotation.x = stride
         right_leg.rotation.x = -stride
-        Artwork.animate(state.get("art", {}), "walk")
+        if zombie.global_position.distance_to(player.global_position) < 1.55:
+            Artwork.animate(state.get("art", {}), "attack")
+        else:
+            Artwork.animate(state.get("art", {}), "walk")
         if zombie.global_position.distance_to(player.global_position) < 1.1 and damage_cooldown <= 0:
             hp = maxi(0, hp - 12)
             damage_cooldown = 0.85
