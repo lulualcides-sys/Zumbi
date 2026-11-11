@@ -12,7 +12,12 @@ Shooter de sobrevivencia contra zumbis em **Godot 4.7.2**, com camera 3/4 superi
 - Testes no GitHub Actions e exportacao HTML5.
 
 ## Controles
-WASD: movimento. Shift: correr. Mouse: mirar; clique esquerdo: atirar. R: recarregar. Enter: recomeçar apos morrer.
+
+**Celular (navegador, de preferencia na horizontal):** toque na metade esquerda inferior para ativar o joystick. Arraste para mover, incline bastante para correr. O sobrevivente escolhe o zumbi visivel mais proximo dentro do alcance, gira, atira e recarrega automaticamente. Solte o dedo para parar. Nenhum botao de mira ou tiro e necessario. Toque na tela para reiniciar apos morrer.
+
+**Computador:** WASD: movimento; Shift: correr; mouse: mira; clique esquerdo: atira; R: recarga; Enter: reinicio. O modo automatico e habilitado ao detectar toque, sem alterar a versao desktop.
+
+**Observacao:** em alguns navegadores o WebGL pode ser limitado e a performance varia por dispositivo; a compilacao automatizada nao substitui teste em um aparelho fisico.
 
 ## Abrir no Godot
 1. Instale Godot 4.7.2.
@@ -25,4 +30,4 @@ WASD: movimento. Shift: correr. Mouse: mirar; clique esquerdo: atirar. R: recarr
 - [Claude Code Game Studios](https://github.com/Donchitos/Claude-Code-Game-Studios), MIT: usamos a metodologia (brief, implementacao focada e QA). O agente Claude nao foi instalado nem precisa de tokens pagos para este build.
 
 ## Estado real
-O codigo pode compilar e exportar via GitHub Actions, mas a avaliacao humana da jogabilidade, o equilibrio e a paridade visual com o video exigem playtest. Personagens ainda sao geometria low-poly (nao modelos 3D finais). IA ainda nao usa NavigationServer3D. Sem audio profissional, fases/campanha ou compatibilidade completa com toque em celular. Nenhum codigo do Pokemon Torre 2 e alterado.
+O codigo pode compilar e exportar via GitHub Actions, mas a avaliacao humana da jogabilidade, o equilibrio e a paridade visual com o video exigem playtest. Personagens ainda sao geometria low-poly (nao modelos 3D finais). IA ainda nao usa NavigationServer3D. Sem audio profissional, fases/campanha ou garantia de desempenho em todos os celulares. Nenhum codigo do Pokemon Torre 2 e alterado.
