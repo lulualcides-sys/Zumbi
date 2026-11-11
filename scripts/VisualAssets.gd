@@ -23,6 +23,7 @@ static func _grade_character(root: Node3D, shader_path: String) -> void:
     var shader := load(shader_path) as Shader
     if shader == null:
         return
+    var graded_count := 0
     for node in root.find_children("*", "MeshInstance3D", true, false):
         var visual := node as MeshInstance3D
         if visual.mesh == null:
@@ -37,6 +38,8 @@ static func _grade_character(root: Node3D, shader_path: String) -> void:
                 graded.shader = shader
                 graded.set_shader_parameter("base_texture", texture)
                 visual.set_surface_override_material(surface, graded)
+                graded_count += 1
+    root.set_meta("graded_surfaces", graded_count)
 
 static func attach_character(body: CharacterBody3D, existing_rig: Dictionary, kind: String, variation: int = 0) -> Dictionary:
     var path := _path(kind, variation)
