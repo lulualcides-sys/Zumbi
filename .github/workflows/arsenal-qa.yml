@@ -96,10 +96,11 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Download Chromium for browser visual QA
+      - name: Use preinstalled open-source Chromium and install Playwright
         run: |
+          command -v chromium
+          chromium --version
           npm install --no-save --ignore-scripts --no-fund --no-audit playwright@1.56.1
-          npx playwright install --with-deps chromium
 
       - name: Verify desktop WebGL + mobile touch and save screenshots
         run: node tools/arsenal_browser_qa.mjs
