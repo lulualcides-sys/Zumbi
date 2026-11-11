@@ -15,8 +15,8 @@ func _run() -> void:
         return
     var scene := packed.instantiate()
     root.add_child(scene)
-    await process_frame
-    await process_frame
+    # scene._ready() runs synchronously. Skip rendering frames in the
+    # headless structural smoke test; the separate OpenGL screenshot checks it.
     var all_passed := true
     all_passed = _check(scene.player != null and scene.camera != null, "Jogador/camera ausentes") and all_passed
     all_passed = _check(scene.camera.projection == Camera3D.PROJECTION_ORTHOGONAL, "Camera 3/4 do video nao configurada") and all_passed
