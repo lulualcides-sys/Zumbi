@@ -31,11 +31,11 @@ func _run() -> void:
     var analog: Vector2 = touch_ui.get("direction")
     ok = _assert(analog.x > 0.5 and analog.y < 0.0 and analog.length() <= 1.0, "analog movement direction invalid") and ok
     game._move_player(0.016)
-    var right := game.camera.global_transform.basis.x
-    var forward := -game.camera.global_transform.basis.z
+    var right: Vector3 = game.camera.global_transform.basis.x
+    var forward: Vector3 = -game.camera.global_transform.basis.z
     right.y = 0.0
     forward.y = 0.0
-    var expected := (right.normalized() * analog.x - forward.normalized() * analog.y).normalized()
+    var expected: Vector3 = (right.normalized() * analog.x - forward.normalized() * analog.y).normalized()
     ok = _assert(game.last_move.normalized().dot(expected) > 0.99, "touch movement not aligned with diagonal camera") and ok
 
     var ignore_drag := InputEventScreenDrag.new()
