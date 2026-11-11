@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   test-build:
@@ -31,6 +31,20 @@ jobs:
         run: |
           mkdir -p build
           godot --headless --path . --export-release "Web" build/index.html
+      - name: Commit tested web export to site for live preview
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p site
+          find site -maxdepth 1 -type f -delete
+          cp -a build/. site/
+          touch site/.nojekyll
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add site/
+          if ! git diff --cached --quiet; then
+            git commit -m 'build: update playable Godot Web preview'
+            git push origin HEAD:main
+          fi
       - name: Save Web build artifact
         uses: actions/upload-artifact@v4
         with:
