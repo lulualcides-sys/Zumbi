@@ -18,10 +18,9 @@ static func _find_animation_player(root: Node) -> AnimationPlayer:
             return found
     return null
 
-static func _grade_zombie(root: Node3D) -> void:
-    # Keep the CC0 model and its atlas, but remove vivid purple/green game-toy
-    # colors that clash with the gritty survivor/reference-video art direction.
-    var shader := load("res://shaders/zombie_grade.gdshader") as Shader
+static func _grade_character(root: Node3D, shader_path: String) -> void:
+    # Preserve imported UVs and animated skeleton, recolor texture only.
+    var shader := load(shader_path) as Shader
     if shader == null:
         return
     for node in root.find_children("*", "MeshInstance3D", true, false):
@@ -59,7 +58,9 @@ static func attach_character(body: CharacterBody3D, existing_rig: Dictionary, ki
         model.name = "TacticalSoldierAnimated"
     body.add_child(model)
     if kind == "zombie":
-        _grade_zombie(model)
+        _grade_character(model, "res://shaders/zombie_grade.gdshader")
+    elif path == TACTICAL_SOLDIER:
+        _grade_character(model, "res://shaders/tactical_armor.gdshader")
     var old_visual: Node3D = existing_rig.get("visual")
     if old_visual != null:
         old_visual.visible = false
