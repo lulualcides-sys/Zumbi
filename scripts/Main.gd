@@ -15,7 +15,7 @@ const MAG_SIZE := 32
 const MAX_ENEMIES := 26
 const WORLD_LIMIT := 17.0
 const MOBILE_AUTO_RANGE := 14.0
-const CAMERA_OFFSET := Vector3(0.0, 9.3, 14.2)
+const CAMERA_OFFSET := Vector3(3.6, 9.0, 14.5)
 
 var rng := RandomNumberGenerator.new()
 var player: CharacterBody3D
@@ -183,7 +183,7 @@ func _create_camera() -> void:
     camera = Camera3D.new()
     camera.name = "ThreeQuarterCamera"
     camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-    camera.size = 8.8
+    camera.size = 7.9
     camera.near = 0.1
     camera.far = 110.0
     camera.current = true
