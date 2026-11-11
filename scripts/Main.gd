@@ -5,6 +5,7 @@ extends Node3D
 const Models = preload("res://scripts/ActorFactory.gd")
 const Artwork = preload("res://scripts/VisualAssets.gd")
 const StreetSurface = preload("res://scripts/SurfaceTextures.gd")
+const MobileJoystick = preload("res://scripts/MobileControls.gd")
 const WALK_SPEED := 5.2
 const RUN_SPEED := 8.0
 const FIRE_INTERVAL := 0.12
@@ -12,6 +13,7 @@ const RELOAD_SECONDS := 1.45
 const MAG_SIZE := 32
 const MAX_ENEMIES := 26
 const WORLD_LIMIT := 17.0
+const MOBILE_AUTO_RANGE := 14.0
 const CAMERA_OFFSET := Vector3(0.0, 9.3, 14.2)
 
 var rng := RandomNumberGenerator.new()
@@ -20,6 +22,7 @@ var camera: Camera3D
 var hud: Label
 var footer: Label
 var reticle: Control
+var mobile_controls: Control
 var player_rig: Dictionary = {}
 var player_art: Dictionary = {}
 var zombie_state: Dictionary = {}
@@ -53,6 +56,7 @@ func _ready() -> void:
     _create_ui()
     _start_wave()
     _update_hud()
+    _refresh_control_labels()
 
 func _environment() -> void:
     var world := WorldEnvironment.new()
@@ -214,6 +218,31 @@ func _create_ui() -> void:
         mark.position = direction
         mark.size = Vector2(4, 4) if direction.x != 0 else Vector2(4, 4)
         reticle.add_child(mark)
+    var joystick_layer := CanvasLayer.new()
+    joystick_layer.layer = 10
+    add_child(joystick_layer)
+    mobile_controls = MobileJoystick.new()
+    mobile_controls.name = "MovementJoystick"
+    joystick_layer.add_child(mobile_controls)
+    mobile_controls.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    _refresh_control_labels()
+
+func _mobile_enabled() -> bool:
+    return mobile_controls != null and bool(mobile_controls.get("active"))
+
+func _refresh_control_labels() -> void:
+    if footer == null or reticle == null:
+        return
+    if _mobile_enabled():
+        footer.text = "ARRASTE O JOYSTICK PARA MOVER  |  TIRO E RECARGA AUTOMATICOS"
+        reticle.visible = false
+    else:
+        footer.text = "WASD MOVER    SHIFT CORRER    MOUSE MIRAR / ATIRAR    R RECARREGAR"
+        reticle.visible = true
+
+func _input(event: InputEvent) -> void:
+    if hp <= 0 and _mobile_enabled() and event is InputEventScreenTouch and event.pressed:
+        get_tree().reload_current_scene()
 
 func _physics_process(delta: float) -> void:
     if hp <= 0:
@@ -232,16 +261,25 @@ func _physics_process(delta: float) -> void:
             _finish_reload()
     _move_player(delta)
     _update_camera(delta)
-    _aim_at_mouse()
+    if not _mobile_enabled():
+        _aim_at_mouse()
     _animate_survivor(delta)
     _move_zombies(delta)
     _update_pickups(delta)
-    if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
-        _fire()
-    if Input.is_key_pressed(KEY_R):
-        _begin_reload()
+    if _mobile_enabled():
+        _mobile_auto_combat()
+    else:
+        if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+            _fire()
+        if Input.is_key_pressed(KEY_R):
+            _begin_reload()
     _advance_wave(delta)
-    reticle.position = get_viewport().get_mouse_position()
+    if _mobile_enabled():
+        reticle.visible = false
+    else:
+        reticle.visible = true
+        reticle.position = get_viewport().get_mouse_position()
+    _refresh_control_labels()
     _update_hud()
 
 func _move_player(delta: float) -> void:
@@ -254,10 +292,14 @@ func _move_player(delta: float) -> void:
         motion.x -= 1.0
     if Input.is_key_pressed(KEY_D):
         motion.x += 1.0
-    motion = motion.normalized()
+    if _mobile_enabled():
+        var analog: Vector2 = mobile_controls.get("direction")
+        motion = Vector3(analog.x, 0.0, analog.y).limit_length(1.0)
+    else:
+        motion = motion.normalized()
     last_move = motion
     var speed := WALK_SPEED
-    if Input.is_key_pressed(KEY_SHIFT):
+    if (_mobile_enabled() and motion.length() > 0.82) or (not _mobile_enabled() and Input.is_key_pressed(KEY_SHIFT)):
         speed = RUN_SPEED
     var target := motion * speed
     player.velocity.x = move_toward(player.velocity.x, target.x, delta * 28.0)
@@ -287,10 +329,50 @@ func _aim_at_mouse() -> void:
         # Rotacao do corpo nao altera WASD.
         player.rotation.y = atan2(aim_direction.x, aim_direction.z)
 
+func _nearest_visible_zombie() -> CharacterBody3D:
+    var nearest: CharacterBody3D = null
+    var best_distance_sq := MOBILE_AUTO_RANGE * MOBILE_AUTO_RANGE
+    for zombie in zombies:
+        if not is_instance_valid(zombie) or not zombie_state.has(zombie):
+            continue
+        var delta := zombie.global_position - player.global_position
+        delta.y = 0.0
+        var distance_sq := delta.length_squared()
+        if distance_sq < 0.09 or distance_sq >= best_distance_sq:
+            continue
+        # Muralhas e cercas impedem selecionar inimigos invisiveis.
+        var start := player.global_position + Vector3(0.0, 0.16, 0.0)
+        var target := zombie.global_position + Vector3(0.0, 0.16, 0.0)
+        var ray := PhysicsRayQueryParameters3D.create(start, target)
+        ray.exclude = [player.get_rid()]
+        var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(ray)
+        if hit.get("collider") != zombie:
+            continue
+        nearest = zombie
+        best_distance_sq = distance_sq
+    return nearest
+
+func _mobile_auto_combat() -> void:
+    if ammo <= 0 and reserve_ammo > 0:
+        _begin_reload()
+        return
+    var target := _nearest_visible_zombie()
+    if target == null:
+        return
+    var vector := target.global_position - player.global_position
+    vector.y = 0.0
+    if vector.length_squared() < 0.0001:
+        return
+    aim_direction = vector.normalized()
+    player.rotation.y = atan2(aim_direction.x, aim_direction.z)
+    if fire_cooldown <= 0.0 and reload_timer <= 0.0:
+        _fire()
+
 func _animate_survivor(delta: float) -> void:
     var moving := last_move.length_squared() > 0.01
+    var running := (_mobile_enabled() and last_move.length() > 0.82) or (not _mobile_enabled() and Input.is_key_pressed(KEY_SHIFT))
     if moving:
-        walk_cycle += delta * (13.0 if Input.is_key_pressed(KEY_SHIFT) else 9.0)
+        walk_cycle += delta * (13.0 if running else 9.0)
     var sway := sin(walk_cycle) * (0.45 if moving else 0.0)
     var visual: Node3D = player_rig["visual"]
     var left_leg: Node3D = player_rig["left_leg"]
@@ -302,7 +384,7 @@ func _animate_survivor(delta: float) -> void:
     right_leg.rotation.x = lerpf(right_leg.rotation.x, -sway, minf(1, delta * 11))
     left_arm.rotation.x = lerpf(left_arm.rotation.x, -0.23 - recoil, minf(1, delta * 12))
     right_arm.rotation.x = lerpf(right_arm.rotation.x, -0.23 - recoil, minf(1, delta * 12))
-    Artwork.animate(player_art, "walk" if moving else "idle", moving and Input.is_key_pressed(KEY_SHIFT))
+    Artwork.animate(player_art, "walk" if moving else "idle", moving and running)
 
 func _fire() -> void:
     if fire_cooldown > 0 or reload_timer > 0:
@@ -516,7 +598,7 @@ func _update_pickups(delta: float) -> void:
 
 func _update_hud() -> void:
     if hp <= 0:
-        hud.text = "ZOMBIE OUTBREAK\nVOCE MORREU  |  ABATES %d\nPRESSIONE ENTER PARA RECOMECAR" % score
+        hud.text = ("ZOMBIE OUTBREAK\nVOCE MORREU  |  ABATES %d\nTOQUE PARA REINICIAR" if _mobile_enabled() else "ZOMBIE OUTBREAK\nVOCE MORREU  |  ABATES %d\nPRESSIONE ENTER PARA RECOMECAR") % score
         return
     var reload_label := "  RECARREGANDO..." if reload_timer > 0 else ""
     hud.text = "ZOMBIE OUTBREAK    ONDA %02d\nVIDA  %03d       ARMA  %02d / %03d%s\nABATES  %03d       ZUMBIS  %02d" % [wave, hp, ammo, reserve_ammo, reload_label, score, zombies.size() + pending_spawns]

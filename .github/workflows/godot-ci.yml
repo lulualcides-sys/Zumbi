@@ -29,6 +29,8 @@ jobs:
         run: godot --headless --editor --path . --import --quit
       - name: Run scripted scene smoke test
         run: godot --headless --path . --script res://tests/smoke.gd
+      - name: Validate single-stick mobile movement and automatic combat
+        run: godot --headless --path . --script res://tests/mobile_controls.gd
       - name: Visual QA - render actual Godot frame and reject runtime script errors
         run: |
           mkdir -p build
