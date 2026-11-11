@@ -45,6 +45,7 @@ func _run() -> void:
         var tactical_node: Node3D = scene.player_art.get("root")
         all_passed = _check(tactical_node != null and tactical_node.visible and tactical_node.name == "TacticalSoldierAnimated", "Tactical soldier missing or hidden") and all_passed
         all_passed = _check(scene.player_art.get("animations", []).size() > 0, "Tactical soldier has no imported animations") and all_passed
+        all_passed = _check(int(tactical_node.get_meta("graded_surfaces", 0)) > 0, "Tactical white/charcoal materials were NOT applied") and all_passed
     all_passed = _check(scene.wave == 1 and scene.pending_spawns > 0, "Sistema de ondas nao iniciou") and all_passed
     all_passed = _check(scene.destructibles.size() >= 4, "Cercas ou objetos destrutiveis ausentes") and all_passed
 
@@ -70,6 +71,11 @@ func _run() -> void:
         all_passed = _check(actual_zombie != null and actual_zombie.is_playing(), "AnimationPlayer do zumbi nao iniciou") and all_passed
     if ResourceLoader.exists("res://assets/cc0/zombie_basic.gltf"):
         all_passed = _check(scene.zombie_state[target].get("art", {}).has("root"), "Zombie CC0 nao importado") and all_passed
+    if ResourceLoader.exists("res://assets/tactical/soldier.glb"):
+        var enemy_art: Dictionary = scene.zombie_state[target].get("art", {})
+        var enemy_mesh: Node3D = enemy_art.get("root")
+        all_passed = _check(bool(enemy_art.get("infected", false)), "Cartoon zombie still being used in reference visual mode") and all_passed
+        all_passed = _check(enemy_mesh != null and int(enemy_mesh.get_meta("graded_surfaces", 0)) > 0, "Infected material was not applied to the soldier mesh") and all_passed
     var hp_before: int = scene.zombie_state[target]["health"]
     var score_before: int = scene.score
     scene._hurt_zombie(target, hp_before)
