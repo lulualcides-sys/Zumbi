@@ -129,7 +129,7 @@ static func attach_character(body: CharacterBody3D, existing_rig: Dictionary, ki
             available.append(str(name))
         # Imported clip list order is arbitrary; list[0] was blending the
         # wrong crouch/death/locomotion pose into the first rendered frame.
-        var initial_choices := ["ready_idle", "aim_idle", "idle_gun", "idle"] if kind == "survivor" else ["walk", "mocap_walk_F", "run", "idle"]
+        var initial_choices := ["idle", "ready_idle", "aim_idle", "idle_gun"] if kind == "survivor" else ["walk", "mocap_walk_F", "run", "idle"]
         for choice in initial_choices:
             if available.has(choice):
                 initial_clip = choice
@@ -170,7 +170,7 @@ static func animate(rig: Dictionary, state: String, running: bool = false) -> vo
         "reload":
             preferred = ["reload", "aim_idle", "idle_gun", "idle"]
         _:
-            preferred = ["idle", "walk"] if infected else (["ready_idle", "aim_idle", "idle", "idle_gun"] if tactical else ["idle_gun", "idle", "stand"])
+            preferred = ["idle", "walk"] if infected else (["idle", "ready_idle", "aim_idle", "idle_gun"] if tactical else ["idle_gun", "idle", "stand"])
 
     # First select exact clip names; do not match "idle" inside "aim_crouch_idle".
     # A substring selector made the soldier crouch even while standing still.
