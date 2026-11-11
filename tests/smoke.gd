@@ -27,8 +27,17 @@ func _run() -> void:
     all_passed = _check(gun_mount != null and gun_mount.visible, "Rifle invisivel") and all_passed
     all_passed = _check(gun_muzzle != null and gun_muzzle.global_position.distance_to(scene.player.global_position) < 2.5, "Boca do cano fora de posicao") and all_passed
     if ResourceLoader.exists("res://assets/cc0/rifle.gltf"):
-        all_passed = _check(bool(scene.weapon_rig.get("source_ok", false)), "Fuzil GLTF CC0 nao instanciado") and all_passed
-        all_passed = _check(gun_mount.get_node_or_null("VisibleCC0Rifle") != null, "Soldado esta sem o rifle visivel") and all_passed
+        all_passed = _check(bool(scene.weapon_rig.get("source_ok", false)), "Fuzil GLTF nao instanciado") and all_passed
+        var weapon_node_name := "GunVisualWithRecoil/VisibleCalibratedM4A1" if bool(scene.weapon_rig.get("calibrated_m4a1", false)) else "GunVisualWithRecoil/VisibleCC0Rifle"
+        all_passed = _check(gun_mount.get_node_or_null(weapon_node_name) != null, "Modelo de arma nao encontrado: " + weapon_node_name) and all_passed
+    if ResourceLoader.exists("res://assets/tactical/m4a1-ready.glb"):
+        all_passed = _check(bool(scene.weapon_rig.get("calibrated_m4a1", false)), "M4A1 exportado do Blender nao foi equipado") and all_passed
+        var ik: Dictionary = scene.weapon_rig.get("arm_ik", {})
+        var right_grip: Marker3D = ik.get("right_grip")
+        var left_grip: Marker3D = ik.get("left_grip")
+        all_passed = _check(ik.get("active", false), "M4A1 sem TwoBoneIK3D nos dois bracos") and all_passed
+        all_passed = _check(right_grip != null and left_grip != null and left_grip.position.z > right_grip.position.z,
+            "A mao de suporte nao esta na frente da empunhadura") and all_passed
 
     if not scene.player_art.is_empty():
         scene._animate_survivor(0.016)
@@ -45,6 +54,10 @@ func _run() -> void:
         var tactical_node: Node3D = scene.player_art.get("root")
         all_passed = _check(tactical_node != null and tactical_node.visible and tactical_node.name == "TacticalSoldierAnimated", "Tactical soldier missing or hidden") and all_passed
         all_passed = _check(scene.player_art.get("animations", []).size() > 0, "Tactical soldier has no imported animations") and all_passed
+        all_passed = _check(scene.weapon_rig.get("skeleton") != null, "Real skeletal rig missing for weapon") and all_passed
+        all_passed = _check(int(scene.weapon_rig.get("right_hand", -1)) >= 0 and int(scene.weapon_rig.get("left_hand", -1)) >= 0, "Rifle not bound to real animated hand bones") and all_passed
+        all_passed = _check(scene.weapon_rig.get("arm_ik", {}).get("active", false), "TwoBoneIK3D hand grip not active") and all_passed
+        all_passed = _check(int(tactical_node.get_meta("graded_surfaces", 0)) > 0, "Tactical white/charcoal materials were NOT applied") and all_passed
     all_passed = _check(scene.wave == 1 and scene.pending_spawns > 0, "Sistema de ondas nao iniciou") and all_passed
     all_passed = _check(scene.destructibles.size() >= 4, "Cercas ou objetos destrutiveis ausentes") and all_passed
 
@@ -70,6 +83,14 @@ func _run() -> void:
         all_passed = _check(actual_zombie != null and actual_zombie.is_playing(), "AnimationPlayer do zumbi nao iniciou") and all_passed
     if ResourceLoader.exists("res://assets/cc0/zombie_basic.gltf"):
         all_passed = _check(scene.zombie_state[target].get("art", {}).has("root"), "Zombie CC0 nao importado") and all_passed
+    if ResourceLoader.exists("res://assets/tactical/soldier.glb"):
+        var enemy_art: Dictionary = scene.zombie_state[target].get("art", {})
+        var enemy_mesh: Node3D = enemy_art.get("root")
+        all_passed = _check(bool(enemy_art.get("infected", false)), "Cartoon zombie still being used in reference visual mode") and all_passed
+        if ResourceLoader.exists("res://assets/tactical/infected.glb"):
+            all_passed = _check(enemy_art.get("path", "").ends_with("/infected.glb"), "Optimized infected asset not loaded") and all_passed
+            all_passed = _check(enemy_art.get("animations", []).size() <= 6, "Unused tactical animation clips remain on enemies") and all_passed
+        all_passed = _check(enemy_mesh != null and int(enemy_mesh.get_meta("graded_surfaces", 0)) > 0, "Infected material was not applied to the soldier mesh") and all_passed
     var hp_before: int = scene.zombie_state[target]["health"]
     var score_before: int = scene.score
     scene._hurt_zombie(target, hp_before)

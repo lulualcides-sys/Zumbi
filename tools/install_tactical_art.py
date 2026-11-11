@@ -41,6 +41,33 @@ def inspect_glb(buf: bytes) -> dict:
     return {"meshes": len(doc["meshes"]), "node_count": len(doc.get("nodes", [])),
             "animations": animations[:140], "minima": vertices[:5], "maxima": maxima[:5]}
 
+def create_infected_variant(source: bytes) -> bytes:
+    """Keep only animations required by a zombie, without touching source art.
+
+    The original soldier GLB includes dozens of expensive third-person
+    locomotion/mocap clips. Importing those for every enemy is unnecessary.
+    The retained track payloads are referenced in the existing BIN chunk.
+    """
+    _, version, _ = struct.unpack_from("<4sII", source, 0)
+    first_len, first_type = struct.unpack_from("<II", source, 12)
+    assert version == 2 and first_type == 0x4e4f534a
+    original_doc = json.loads(source[20:20+first_len].decode("utf-8"))
+    keep = {"idle", "walk", "run", "melee", "hit", "death"}
+    original_doc["animations"] = [
+        clip for clip in original_doc.get("animations", [])
+        if str(clip.get("name", "")).lower() in keep
+    ]
+    if len(original_doc["animations"]) < 5:
+        raise ValueError("Infected model does not preserve required animation clips")
+    json_bytes = json.dumps(original_doc, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    json_bytes += b" " * ((4 - len(json_bytes) % 4) % 4)
+    rest_chunks = source[20 + first_len:]
+    result_len = 12 + 8 + len(json_bytes) + len(rest_chunks)
+    return (struct.pack("<4sII", b"glTF", 2, result_len)
+            + struct.pack("<II", len(json_bytes), 0x4e4f534a)
+            + json_bytes + rest_chunks)
+
+
 def main() -> int:
     DEST.parent.mkdir(parents=True, exist_ok=True)
     if DEST.exists():
@@ -55,6 +82,12 @@ def main() -> int:
     if not meta["animations"]:
         raise ValueError("Animated soldier file has no animations")
     DEST.write_bytes(buf)
+    infected = create_infected_variant(buf)
+    infected_meta = inspect_glb(infected)
+    enemy_path = DEST.with_name("infected.glb")
+    enemy_path.write_bytes(infected)
+    print("INFECTED_VARIANT_OK: {} bytes, {} animations".format(
+        len(infected), infected_meta["animations"]), flush=True)
     print("TACTICAL_SOLDIER_OK: size={} sha256={} meshes={} nodes={} animations={}".format(
         len(buf), hashlib.sha256(buf).hexdigest(), meta["meshes"], meta["node_count"], meta["animations"]), flush=True)
     print("TACTICAL_BOUNDS minima={} maxima={}".format(meta["minima"], meta["maxima"]), flush=True)

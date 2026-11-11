@@ -12,10 +12,10 @@ const RUN_SPEED := 8.0
 const FIRE_INTERVAL := 0.12
 const RELOAD_SECONDS := 1.45
 const MAG_SIZE := 32
-const MAX_ENEMIES := 26
+const MAX_ENEMIES := 14
 const WORLD_LIMIT := 17.0
 const MOBILE_AUTO_RANGE := 14.0
-const CAMERA_OFFSET := Vector3(7.6, 9.3, 12.0)
+const CAMERA_OFFSET := Vector3(1.8, 20.5, 6.4)
 
 var rng := RandomNumberGenerator.new()
 var player: CharacterBody3D
@@ -64,16 +64,16 @@ func _environment() -> void:
     var world := WorldEnvironment.new()
     var env := Environment.new()
     env.background_mode = Environment.BG_COLOR
-    env.background_color = Color("#122027")
+    env.background_color = Color("#16262e")
     env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    env.ambient_light_color = Color("#7c95a0")
-    env.ambient_light_energy = 0.60
+    env.ambient_light_color = Color("#849eab")
+    env.ambient_light_energy = 0.54
     world.environment = env
     add_child(world)
     var moon := DirectionalLight3D.new()
     moon.rotation_degrees = Vector3(-57, -31, 0)
-    moon.light_color = Color("#a6c5d6")
-    moon.light_energy = 1.35
+    moon.light_color = Color("#d5e7ee")
+    moon.light_energy = 1.20
     moon.shadow_enabled = true
     add_child(moon)
 
@@ -95,22 +95,36 @@ func _solid_box(where: Vector3, dimensions: Vector3, color: Color, health: int =
     return object
 
 func _fence_segment(at: Vector3) -> void:
+    # Narrow, peaked wood slats like the destructible fence in the reference.
+    # A single collider remains intentional so the existing damage system works.
     var body := StaticBody3D.new()
     body.position = at
     add_child(body)
     var collider := CollisionShape3D.new()
     var shape := BoxShape3D.new()
-    shape.size = Vector3(1.88, 1.20, 0.25)
+    shape.size = Vector3(1.88, 1.15, 0.20)
     collider.shape = shape
     body.add_child(collider)
-    var planks := Color("#7f5940")
-    for n in range(6):
-        var x := -0.78 + float(n) * 0.31
-        var plank := _visual_box(body, Vector3(x, 0, 0), Vector3(0.24, 1.15, 0.14), planks)
-        plank.rotation.z = rng.randf_range(-0.035, 0.035)
-    _visual_box(body, Vector3(0, 0.32, -0.13), Vector3(1.90, 0.13, 0.16), Color("#65422e"))
-    _visual_box(body, Vector3(0, -0.32, -0.13), Vector3(1.90, 0.13, 0.16), Color("#65422e"))
-    destructibles[body] = {"health": 4, "size": Vector3(1.88, 1.15, 0.22), "tint": planks}
+    var wood := Color("#6d5946")
+    for n in range(9):
+        var x := -0.84 + float(n) * 0.21
+        var tint := wood.lightened(0.03 * float(n % 3))
+        var slat := _visual_box(body, Vector3(x, -0.02, 0.0), Vector3(0.145, 0.91, 0.105), tint)
+        slat.rotation.z = rng.randf_range(-0.011, 0.011)
+        var peak := MeshInstance3D.new()
+        var cone := CylinderMesh.new()
+        cone.top_radius = 0.0
+        cone.bottom_radius = 0.088
+        cone.height = 0.16
+        cone.radial_segments = 4
+        peak.mesh = cone
+        peak.material_override = Models.material(tint)
+        peak.position = Vector3(x, 0.50, 0.0)
+        body.add_child(peak)
+    for z in [-0.19]:
+        _visual_box(body, Vector3(0, 0.29, float(z)), Vector3(1.9, 0.10, 0.14), Color("#513b30"))
+        _visual_box(body, Vector3(0, -0.29, float(z)), Vector3(1.9, 0.10, 0.14), Color("#513b30"))
+    destructibles[body] = {"health": 4, "size": Vector3(1.88, 1.15, 0.20), "tint": wood}
 
 func _street_lamp(at: Vector3) -> void:
     _visual_box(self, at + Vector3(0, 2.15, 0), Vector3(0.17, 4.3, 0.17), Color("#354e55"))
@@ -124,50 +138,37 @@ func _street_lamp(at: Vector3) -> void:
     add_child(light)
 
 func _level() -> void:
-    var ground := _solid_box(Vector3(0, -0.38, 0), Vector3(40, 0.76, 40), Color("#26353b"))
-    var ground_visual := ground.get_child(1) as MeshInstance3D
-    ground_visual.material_override = StreetSurface.asphalt_material(Color("#5b6870"), 20.0)
-    var road_north := _visual_box(self, Vector3(0, 0.009, 0), Vector3(10.0, 0.024, 39.0), Color("#303d40"))
-    var road_east := _visual_box(self, Vector3(0, 0.012, 0), Vector3(39.0, 0.024, 10.0), Color("#303d40"))
-    road_north.material_override = StreetSurface.asphalt_material(Color("#6a6d68"), 12.0)
-    road_east.material_override = StreetSurface.asphalt_material(Color("#636b69"), 12.0)
-    for i in range(-3, 4):
-        _visual_box(self, Vector3(0, 0.031, float(i) * 5.0), Vector3(0.13, 0.02, 2.2), Color("#a59965"))
-        _visual_box(self, Vector3(float(i) * 5.0, 0.034, 0), Vector3(2.0, 0.02, 0.13), Color("#a59965"))
-    for row in range(-9, 10):
-        # Grade discreta igual ao piso de prototipo do video.
-        var tint := Color("#32454b")
-        _visual_box(self, Vector3(float(row) * 2.0, 0.018, 0), Vector3(0.018, 0.008, 39.0), tint)
-        _visual_box(self, Vector3(0, 0.018, float(row) * 2.0), Vector3(39.0, 0.008, 0.018), tint)
+    # Reference-first staging yard: dark desaturated blue, faint grid,
+    # sparse obstacles. Remove the neon road paint and blue cartoon barrels.
+    var ground := _solid_box(Vector3(0, -0.36, 0), Vector3(40, 0.72, 40), Color("#263944"))
+    var ground_visual: MeshInstance3D = ground.get_child(1) as MeshInstance3D
+    var ground_mat := StandardMaterial3D.new()
+    ground_mat.albedo_color = Color("#233642")
+    ground_mat.roughness = 0.94
+    ground_visual.material_override = ground_mat
+
+    # Fine matte grid, close to the test arena in the supplied footage.
+    # These lines have no collider and cannot block the player or bullets.
+    for i in range(-10, 11):
+        var x := float(i) * 2.0
+        _visual_box(self, Vector3(x, 0.018, 0.0), Vector3(0.014, 0.009, 39.0), Color("#2d4655"))
+        _visual_box(self, Vector3(0.0, 0.019, x), Vector3(39.0, 0.009, 0.014), Color("#2d4655"))
+
+    # One readable destructible wooden fence is enough for the initial view.
     for i in range(3):
-        _fence_segment(Vector3(-2.2 + float(i) * 1.9, 0.65, -3.1))
-    for i in range(2):
-        _fence_segment(Vector3(4.2 + float(i) * 1.9, 0.65, 4.6))
-    _solid_box(Vector3(-11.7, 0.68, -9.0), Vector3(2.9, 1.35, 1.6), Color("#505d5e"), 7)
-    _solid_box(Vector3(12.0, 0.72, 8.0), Vector3(3.2, 1.45, 1.5), Color("#516066"), 7)
-    _solid_box(Vector3(-9.0, 0.6, 7.0), Vector3(1.35, 1.18, 1.4), Color("#755c46"), 4)
-    _solid_box(Vector3(8.0, 0.45, -9.0), Vector3(1.15, 0.90, 1.15), Color("#7b6046"), 4)
-    for i in range(7):
-        var px := rng.randf_range(-14, 14)
-        var pz := rng.randf_range(-14, 14)
-        if Vector2(px, pz).length() < 6.0:
-            continue
-        _solid_box(Vector3(px, 0.42, pz), Vector3(0.9, 0.83, 0.9), Color("#5b6665"), 3)
-    for x in [-19.1, 19.1]:
-        _solid_box(Vector3(float(x), 1.0, 0), Vector3(0.6, 2.0, 38), Color("#46545a"))
-    for z in [-19.1, 19.1]:
-        _solid_box(Vector3(0, 1.0, float(z)), Vector3(38, 2.0, 0.6), Color("#46545a"))
-    _street_lamp(Vector3(-15, 0, -13))
-    _street_lamp(Vector3(14, 0, 13))
-    _street_lamp(Vector3(14, 0, -12))
-    _street_lamp(Vector3(6.0, 0, -7.6))
-    # Props CC0 com geometria, UVs, materiais e silhuetas reais. Fallback
-    # permanece jogavel quando o pacote visual ainda nao foi instalado.
-    Artwork.add_prop(self, "container_green.gltf", Vector3(-12, 0.02, -13), 0.77, 0.22)
-    Artwork.add_prop(self, "pallet.gltf", Vector3(-3.1, 0.02, 2.1), 1.0, 0.45)
-    Artwork.add_prop(self, "barrel.gltf", Vector3(4.8, 0.02, -2.4), 1.0)
-    Artwork.add_prop(self, "barrel.gltf", Vector3(5.6, 0.02, -2.2), 1.0)
-    Artwork.add_prop(self, "traffic_barrier.gltf", Vector3(-5.6, 0.02, 1.0), 1.15, -0.32)
+        _fence_segment(Vector3(-2.05 + float(i) * 1.90, 0.60, -4.20))
+    # Secondary props occupy the far edges so the character remains focal.
+    _solid_box(Vector3(-10.8, 0.56, -9.0), Vector3(2.3, 1.12, 1.4), Color("#51616a"), 6)
+    _solid_box(Vector3(10.2, 0.45, 7.6), Vector3(1.0, 0.90, 1.1), Color("#4d5a5a"), 4)
+    Artwork.add_prop(self, "container_green.gltf", Vector3(-12.2, 0.0, 12.2), 0.85, 0.0)
+    Artwork.add_prop(self, "pallet.gltf", Vector3(-6.4, 0.01, 6.4), 0.90, 0.36)
+    Artwork.add_prop(self, "traffic_barrier.gltf", Vector3(9.3, 0.0, -11.1), 0.95, 0.0)
+
+    # Simple low-contrast perimeter walls. No bright streetlight poles.
+    for x in [-19.4, 19.4]:
+        _solid_box(Vector3(float(x), 0.90, 0), Vector3(0.45, 1.8, 39.0), Color("#354955"))
+    for z in [-19.4, 19.4]:
+        _solid_box(Vector3(0, 0.90, float(z)), Vector3(39.0, 1.8, 0.45), Color("#354955"))
 
 func _create_player() -> void:
     player = CharacterBody3D.new()
@@ -177,13 +178,13 @@ func _create_player() -> void:
     player_rig = Models.survivor(player)
     player_art = Artwork.attach_character(player, player_rig, "survivor")
     # Imported survivor does not include its own rifle: attach the CC0 model.
-    weapon_rig = WeaponVisual.attach(player)
+    weapon_rig = WeaponVisual.attach(player, player_art)
 
 func _create_camera() -> void:
     camera = Camera3D.new()
     camera.name = "ThreeQuarterCamera"
     camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-    camera.size = 7.9
+    camera.size = 8.8
     camera.near = 0.1
     camera.far = 110.0
     camera.current = true
@@ -197,12 +198,12 @@ func _create_ui() -> void:
     var panel := ColorRect.new()
     panel.color = Color(0.035, 0.09, 0.12, 0.54)
     panel.position = Vector2(14, 14)
-    panel.size = Vector2(370, 106)
+    panel.size = Vector2(310, 97)
     layer.add_child(panel)
     hud = Label.new()
     hud.position = Vector2(30, 23)
     hud.add_theme_color_override("font_color", Color("#e3efe9"))
-    hud.add_theme_font_size_override("font_size", 18)
+    hud.add_theme_font_size_override("font_size", 17)
     layer.add_child(hud)
     footer = Label.new()
     footer.anchor_top = 1.0
@@ -397,6 +398,7 @@ func _animate_survivor(delta: float) -> void:
     left_arm.rotation.x = lerpf(left_arm.rotation.x, -0.23 - recoil, minf(1, delta * 12))
     right_arm.rotation.x = lerpf(right_arm.rotation.x, -0.23 - recoil, minf(1, delta * 12))
     Artwork.animate(player_art, "walk" if moving else "idle", moving and running)
+    WeaponVisual.align_to_hands(weapon_rig, player, delta)
 
 func _fire() -> void:
     if fire_cooldown > 0 or reload_timer > 0:
@@ -582,7 +584,10 @@ func _move_zombies(delta: float) -> void:
         var right_leg: Node3D = rig["right_leg"]
         left_leg.rotation.x = stride
         right_leg.rotation.x = -stride
-        Artwork.animate(state.get("art", {}), "walk")
+        if zombie.global_position.distance_to(player.global_position) < 1.55:
+            Artwork.animate(state.get("art", {}), "attack")
+        else:
+            Artwork.animate(state.get("art", {}), "walk")
         if zombie.global_position.distance_to(player.global_position) < 1.1 and damage_cooldown <= 0:
             hp = maxi(0, hp - 12)
             damage_cooldown = 0.85
