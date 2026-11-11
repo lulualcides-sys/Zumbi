@@ -1,8 +1,10 @@
 extends RefCounted
 ## Quaternius CC0 rifle follows the imported soldier's animated hand bones.
 const RIFLE_PATH := "res://assets/cc0/rifle.gltf"
+const CALIBRATED_M4A1 := "res://assets/tactical/m4a1-ready.glb"
+const M4A1_SCALE := 0.47
 const ArmsIK = preload("res://scripts/ArmsIK.gd")
-const RIFLE_OFFSET := Vector3(0.06, 0.65, 0.27)
+const RIFLE_OFFSET := Vector3(0.035, 0.71, 0.35)
 const RIFLE_SCALE := 0.57
 
 static func _metal(tint: Color, glow: bool = false) -> StandardMaterial3D:
@@ -91,13 +93,22 @@ static func attach(body: CharacterBody3D, character_art: Dictionary = {}) -> Dic
     holder.add_child(weapon_visual)
 
     var source_ok := false
-    if ResourceLoader.exists(RIFLE_PATH):
-        var packed := load(RIFLE_PATH) as PackedScene
+    var calibrated := ResourceLoader.exists(CALIBRATED_M4A1)
+    var rifle_source := CALIBRATED_M4A1 if calibrated else RIFLE_PATH
+    if ResourceLoader.exists(rifle_source):
+        var packed := load(rifle_source) as PackedScene
         if packed != null:
             var model := packed.instantiate() as Node3D
             if model != null:
-                model.name = "VisibleCC0Rifle"
-                model.scale = Vector3.ONE * RIFLE_SCALE
+                model.name = "VisibleCalibratedM4A1" if calibrated else "VisibleCC0Rifle"
+                if calibrated:
+                    # The source M4A1 aims along -Z. Align with the game +Z
+                    # forward vector, anchor its pistol grip at this mount.
+                    model.scale = Vector3.ONE * M4A1_SCALE
+                    model.rotation.y = PI
+                    model.position = Vector3(0.0, 0.15 * M4A1_SCALE, -0.05 * M4A1_SCALE)
+                else:
+                    model.scale = Vector3.ONE * RIFLE_SCALE
                 weapon_visual.add_child(model)
                 _grade_rifle(model)
                 source_ok = true
@@ -106,8 +117,9 @@ static func attach(body: CharacterBody3D, character_art: Dictionary = {}) -> Dic
 
     var muzzle := Marker3D.new()
     muzzle.name = "RealBarrelMuzzle"
-    # GLTF barrel extends to +1.019 source units. Scale = 0.57.
-    muzzle.position = Vector3(0.0, 0.03, 0.58)
+    # The muzzle coordinate comes from Blender's M4A1_MuzzleSocket,
+    # transformed by M4A1_SCALE, the 180-degree yaw and grip offset.
+    muzzle.position = Vector3(0.0, 0.19 * M4A1_SCALE, 1.04 * M4A1_SCALE) if calibrated else Vector3(0.0, 0.03, 0.58)
     weapon_visual.add_child(muzzle)
 
     var muzzle_flash := MeshInstance3D.new()
@@ -132,6 +144,12 @@ static func attach(body: CharacterBody3D, character_art: Dictionary = {}) -> Dic
                 names.append(skeleton.get_bone_name(i))
             print("TACTICAL_BONE_LIST: ", names)
     var arm_ik := ArmsIK.attach(body, skeleton, holder)
+    if calibrated and arm_ik.get("active", false):
+        var primary: Marker3D = arm_ik.get("right_grip")
+        var support: Marker3D = arm_ik.get("left_grip")
+        # Grip points from the same source project's M4A1 pose dictionary.
+        primary.position = Vector3.ZERO
+        support.position = Vector3(-0.042, 0.15 * M4A1_SCALE, 0.53 * M4A1_SCALE)
     return {
         "arm_ik": arm_ik,
         "mount": holder,
@@ -139,6 +157,7 @@ static func attach(body: CharacterBody3D, character_art: Dictionary = {}) -> Dic
         "muzzle": muzzle,
         "flash": muzzle_flash,
         "source_ok": source_ok,
+        "calibrated_m4a1": source_ok and calibrated,
         "skeleton": skeleton,
         "right_hand": right_idx,
         "left_hand": left_idx,
