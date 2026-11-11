@@ -43,6 +43,16 @@ jobs:
         run: godot --headless --editor --path . --import --quit
       - name: Run smoke test
         run: godot --headless --path . --script res://tests/smoke.gd
+      - name: Visual QA - render actual Godot frame and reject runtime script errors
+        run: |
+          mkdir -p build
+          set -o pipefail
+          xvfb-run -a godot --rendering-driver opengl3 --path . --script res://tests/render_preview.gd 2>&1 | tee build/render.log
+          if grep -q 'SCRIPT ERROR:' build/render.log; then
+            echo 'Runtime GDScript error during visual rendering'
+            exit 1
+          fi
+          test -s build/preview.png
       - name: Export Godot 3D game to HTML5
         run: |
           mkdir -p build
