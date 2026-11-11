@@ -17,3 +17,11 @@ This revision replaces the cartoon player mesh with an animated military soldier
 `python3 tools/install_tactical_art.py` downloads a **pinned commit** and checks GLB format, limits size, inspects animations, and prints SHA-256. Import happens in GitHub Actions; the build embeds the asset for runtime use. Neither the build nor the model requires a paid AI account.
 
 If this asset is removed, Godot falls back to the Quaternius CC0 starter character. The player should not ship with a missing model without triggering QA warnings.
+
+
+## Compatible M4A1 rifle (Blender-prepared)
+- Original: M4A1 by Firewarden, https://sketchfab.com/3d-models/m4a1-40d8ef818c7549a896371cbb1f64fec6 (CC BY 4.0).
+- Source redistribution: https://github.com/cktang88/3d-fps/blob/130ac2a5c856401ec36e7d35afcfefe40c5801f4/public/assets/models/weapons/m4a1.glb
+- Adaptations: Blender import/export adds pistol-grip, handguard and muzzle socket markers. Godot scales/rotates the gun and targets native TwoBoneIK3D to hold both grips.
+- Reproducible GitHub Actions pipeline: tools/download_m4a1.py, tools/blender/prepare_m4a1.py and tools/verify_m4a1.py.
+- Preserve credit to Firewarden and the original soldier/animation authors in distributed builds.
