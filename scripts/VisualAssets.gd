@@ -42,7 +42,7 @@ static func attach_character(body: CharacterBody3D, existing_rig: Dictionary, ki
             available.append(str(name))
         if available.size() > 0:
             animator.play(available[0])
-    return {"root": model, "player": animator, "animations": available, "active": "", "path": path}
+    return {"root": model, "player": animator, "animations": available, "active": "", "path": path, "kind": kind}
 
 static func animate(rig: Dictionary, state: String, running: bool = false) -> void:
     if rig.is_empty():
@@ -52,15 +52,16 @@ static func animate(rig: Dictionary, state: String, running: bool = false) -> vo
         return
     var names: Array = rig.get("animations", [])
     var preferred: Array[String] = []
+    var human := rig.get("kind", "") == "survivor"
     match state:
         "walk":
-            preferred = ["run", "sprint", "jog", "walk"] if running else ["walk", "jog", "run"]
+            preferred = (["run_gun", "run", "sprint", "jog", "walk_gun", "walk"] if running else ["walk_gun", "walk", "jog", "run_gun", "run"]) if human else (["run_arms", "run", "walk"] if running else ["walk", "run"])
         "attack":
-            preferred = ["shoot", "fire", "attack", "rifle"]
+            preferred = ["shoot", "fire", "attack", "run_gun"] if human else ["idle_attack", "punch", "run_attack", "attack"]
         "death":
             preferred = ["death", "die", "dead"]
         _:
-            preferred = ["idle", "breath", "stand"]
+            preferred = ["idle_gun", "idle", "breath", "stand"] if human else ["idle", "stand"]
     var chosen := ""
     for prefix in preferred:
         for name in names:
@@ -74,7 +75,10 @@ static func animate(rig: Dictionary, state: String, running: bool = false) -> vo
     if rig.get("active", "") == chosen and player.is_playing():
         return
     rig["active"] = chosen
-    player.play(chosen, 0.16, 1.22 if running else 1.0)
+    var clip := player.get_animation(chosen)
+    if clip != null and state in ["idle", "walk"]:
+        clip.loop_mode = Animation.LOOP_LINEAR
+    player.play(chosen, 0.18, 1.18 if running else 1.0)
 
 static func add_prop(parent: Node3D, filename: String, where: Vector3, scale_factor: float = 1.0, y_rotation: float = 0.0) -> Node3D:
     var allowed := ["barrel.gltf", "pallet.gltf", "traffic_barrier.gltf", "container_green.gltf"]
