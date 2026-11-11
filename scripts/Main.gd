@@ -178,7 +178,7 @@ func _create_player() -> void:
     player_rig = Models.survivor(player)
     player_art = Artwork.attach_character(player, player_rig, "survivor")
     # Imported survivor does not include its own rifle: attach the CC0 model.
-    weapon_rig = WeaponVisual.attach(player)
+    weapon_rig = WeaponVisual.attach(player, player_art)
 
 func _create_camera() -> void:
     camera = Camera3D.new()
@@ -398,6 +398,7 @@ func _animate_survivor(delta: float) -> void:
     left_arm.rotation.x = lerpf(left_arm.rotation.x, -0.23 - recoil, minf(1, delta * 12))
     right_arm.rotation.x = lerpf(right_arm.rotation.x, -0.23 - recoil, minf(1, delta * 12))
     Artwork.animate(player_art, "walk" if moving else "idle", moving and running)
+    WeaponVisual.align_to_hands(weapon_rig, player, delta)
 
 func _fire() -> void:
     if fire_cooldown > 0 or reload_timer > 0:

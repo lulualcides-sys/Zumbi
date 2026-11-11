@@ -43,6 +43,8 @@ static func _grade_character(root: Node3D, shader_path: String) -> void:
             continue
         for surface in range(visual.mesh.get_surface_count()):
             var original := visual.get_active_material(surface)
+            if root.name == "TacticalSoldierAnimated":
+                print("TACTICAL_MATERIAL_SOURCE: surface=", surface, " class=", original.get_class() if original != null else "NULL", " name=", original.resource_name if original != null else "NONE")
             var tint := Color.WHITE
             var texture: Texture2D = _neutral_texture()
             if original is BaseMaterial3D:

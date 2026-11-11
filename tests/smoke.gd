@@ -45,6 +45,8 @@ func _run() -> void:
         var tactical_node: Node3D = scene.player_art.get("root")
         all_passed = _check(tactical_node != null and tactical_node.visible and tactical_node.name == "TacticalSoldierAnimated", "Tactical soldier missing or hidden") and all_passed
         all_passed = _check(scene.player_art.get("animations", []).size() > 0, "Tactical soldier has no imported animations") and all_passed
+        all_passed = _check(scene.weapon_rig.get("skeleton") != null, "Real skeletal rig missing for weapon") and all_passed
+        all_passed = _check(int(scene.weapon_rig.get("right_hand", -1)) >= 0 and int(scene.weapon_rig.get("left_hand", -1)) >= 0, "Rifle not bound to real animated hand bones") and all_passed
         all_passed = _check(int(tactical_node.get_meta("graded_surfaces", 0)) > 0, "Tactical white/charcoal materials were NOT applied") and all_passed
     all_passed = _check(scene.wave == 1 and scene.pending_spawns > 0, "Sistema de ondas nao iniciou") and all_passed
     all_passed = _check(scene.destructibles.size() >= 4, "Cercas ou objetos destrutiveis ausentes") and all_passed
