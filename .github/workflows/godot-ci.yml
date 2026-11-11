@@ -64,6 +64,11 @@ jobs:
           xvfb-run -a godot --rendering-driver opengl3 --path . --script res://tests/pose_gallery.gd
           test -s build/pose_ready_idle.png
           test -s build/pose_aim_idle.png
+      - name: Validate soldier upright stance with front and side profile images
+        run: |
+          xvfb-run -a -s "-screen 0 1920x1600x24" godot --rendering-driver opengl3 --path . --script res://tests/rig_profile.gd
+          test -s build/rig-ready_idle-front.png
+          test -s build/rig-ready_idle-side.png
       - name: Export browser version
         run: |
           mkdir -p build
