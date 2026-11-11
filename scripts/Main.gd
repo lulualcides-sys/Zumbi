@@ -33,6 +33,7 @@ var zombies: Array[CharacterBody3D] = []
 var destructibles: Dictionary = {}
 var pickups: Array[Node3D] = []
 var aim_direction := Vector3.FORWARD
+var aim_point := Vector3(0.0, 0.75, -3.15)
 var has_player_aim_input := false
 var ammo := MAG_SIZE
 var reserve_ammo := 160
@@ -157,8 +158,8 @@ func _level() -> void:
         _visual_box(self, Vector3(0.0, 0.019, x), Vector3(39.0, 0.009, 0.011), Color("#22394a"))
 
     # One readable destructible wooden fence is enough for the initial view.
-    for i in range(4):
-        _fence_segment(Vector3(-3.00 + float(i) * 1.90, 0.60, -3.15))
+    for i in range(3):
+        _fence_segment(Vector3(-2.05 + float(i) * 1.90, 0.60, -3.15))
     # Secondary props occupy the far edges so the character remains focal.
     _solid_box(Vector3(-10.8, 0.56, -9.0), Vector3(2.3, 1.12, 1.4), Color("#51616a"), 6)
     _solid_box(Vector3(10.2, 0.45, 7.6), Vector3(1.0, 0.90, 1.1), Color("#4d5a5a"), 4)
@@ -341,6 +342,7 @@ func _aim_at_mouse() -> void:
     if distance <= 0.0:
         return
     var point := origin + direction * distance
+    aim_point = point
     var heading := point - player.global_position
     heading.y = 0
     if heading.length_squared() > 0.02:
@@ -383,6 +385,8 @@ func _mobile_auto_combat() -> void:
     if vector.length_squared() < 0.0001:
         return
     aim_direction = vector.normalized()
+    # Shoot toward actual zombie body height instead of a flat horizontal ray.
+    aim_point = target.global_position + Vector3(0.0, 0.22, 0.0)
     player.rotation.y = atan2(aim_direction.x, aim_direction.z)
     if fire_cooldown <= 0.0 and reload_timer <= 0.0:
         _fire()
@@ -419,7 +423,13 @@ func _fire() -> void:
     # from the invisible placeholder rifle in the procedural fallback.
     var muzzle: Marker3D = weapon_rig["muzzle"]
     var start: Vector3 = muzzle.global_position
-    var destination := start + aim_direction * 31.0
+    # A horizontal trace from shoulder height skipped the low destructible
+    # fence and sometimes missed zombie capsules. Aim from the *real* muzzle
+    # down toward the selected world target, preserving the exact tracer path.
+    var trace_vector := aim_point - start
+    if trace_vector.length_squared() < 0.04:
+        trace_vector = aim_direction
+    var destination := start + trace_vector.normalized() * 31.0
     var query := PhysicsRayQueryParameters3D.create(start, destination)
     query.exclude = [player.get_rid()]
     var result: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
