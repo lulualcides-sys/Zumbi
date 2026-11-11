@@ -46,8 +46,8 @@ func _capture() -> void:
         touch_control.queue_redraw()
         await process_frame
         var mobile_image := root.get_texture().get_image()
-        if mobile_image == null or mobile_image.is_empty() or mobile_image.get_width() < 600:
-            push_error("Mobile screen capture failed: " + str(viewport_size))
+        if mobile_image == null or mobile_image.is_empty() or mobile_image.get_width() != viewport_size.x or mobile_image.get_height() != viewport_size.y:
+            push_error("Wrong mobile viewport: expected " + str(viewport_size) + " got " + str(mobile_image.get_size() if mobile_image != null else Vector2i.ZERO))
             quit(1)
             return
         var tag := "mobile-landscape" if viewport_size.x > viewport_size.y else "mobile-portrait"
