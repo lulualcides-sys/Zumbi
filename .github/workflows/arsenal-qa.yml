@@ -19,7 +19,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: arsenal-qa-\${{ github.ref }}
+  group: arsenal-qa-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -109,7 +109,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: zumbi-arsenal-qa-\${{ github.run_id }}
+          name: zumbi-arsenal-qa-${{ github.run_id }}
           path: |
             build/qa/
             build/preview.png
