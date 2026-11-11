@@ -40,7 +40,9 @@ static func _grade_character(root: Node3D, shader_path: String) -> void:
 
 static func attach_character(body: CharacterBody3D, existing_rig: Dictionary, kind: String, variation: int = 0) -> Dictionary:
     var path := _path(kind, variation)
-    if kind == "survivor" and ResourceLoader.exists(TACTICAL_SOLDIER):
+    # Infected tactical humans match the detail and silhouette of the player.
+    # Avoid mixing a realistic soldier with cartoon Quaternius zombie models.
+    if ResourceLoader.exists(TACTICAL_SOLDIER):
         path = TACTICAL_SOLDIER
     if not ResourceLoader.exists(path):
         return {}
@@ -55,10 +57,13 @@ static func attach_character(body: CharacterBody3D, existing_rig: Dictionary, ki
     model.name = "Art_CC0_" + kind
     model.position = Vector3(0.0, -0.87, 0.0)
     if path == TACTICAL_SOLDIER:
-        model.name = "TacticalSoldierAnimated"
+        model.name = "TacticalSoldierAnimated" if kind == "survivor" else "InfectedSoldierAnimated"
+        if kind == "zombie":
+            var height_scale := [0.92, 1.01, 1.09][posmod(variation, 3)]
+            model.scale = Vector3(1.0, height_scale, 1.0)
     body.add_child(model)
     if kind == "zombie":
-        _grade_character(model, "res://shaders/zombie_grade.gdshader")
+        _grade_character(model, "res://shaders/infected_soldier.gdshader")
     elif path == TACTICAL_SOLDIER:
         _grade_character(model, "res://shaders/tactical_armor.gdshader")
     var old_visual: Node3D = existing_rig.get("visual")
@@ -71,7 +76,9 @@ static func attach_character(body: CharacterBody3D, existing_rig: Dictionary, ki
             available.append(str(name))
         if available.size() > 0:
             animator.play(available[0])
-    return {"root": model, "player": animator, "animations": available, "active": "", "path": path, "tactical": path == TACTICAL_SOLDIER}
+    return {"root": model, "player": animator, "animations": available, "active": "", "path": path,
+            "tactical": path == TACTICAL_SOLDIER and kind == "survivor",
+            "infected": path == TACTICAL_SOLDIER and kind == "zombie"}
 
 static func animate(rig: Dictionary, state: String, running: bool = false) -> void:
     if rig.is_empty():
@@ -81,21 +88,24 @@ static func animate(rig: Dictionary, state: String, running: bool = false) -> vo
         return
     var available: Array = rig.get("animations", [])
     var tactical: bool = rig.get("tactical", false)
+    var infected: bool = rig.get("infected", false)
     var preferred: Array = []
     match state:
         "walk":
-            if tactical:
+            if infected:
+                preferred = ["run", "mocap_walk_F", "walk"] if running else ["walk", "mocap_walk_F", "run"]
+            elif tactical:
                 preferred = ["aim_run", "ready_run", "run", "mocap_run_F", "aim_walk"] if running else ["aim_walk", "ready_walk", "walk", "mocap_walk_F"]
             else:
                 preferred = ["run_gun", "run", "walk_gun", "walk"] if running else ["walk_gun", "walk", "run"]
         "attack":
-            preferred = ["shoot", "aim_idle", "ready_idle", "idle_gun", "idle"]
+            preferred = ["melee", "hit", "walk"] if infected else ["shoot", "aim_idle", "ready_idle", "idle_gun", "idle"]
         "death":
             preferred = ["death", "die", "dead"]
         "reload":
             preferred = ["reload", "aim_idle", "idle_gun", "idle"]
         _:
-            preferred = ["aim_idle", "ready_idle", "idle", "idle_gun"] if tactical else ["idle_gun", "idle", "stand"]
+            preferred = ["idle", "walk"] if infected else (["aim_idle", "ready_idle", "idle", "idle_gun"] if tactical else ["idle_gun", "idle", "stand"])
 
     # First select exact clip names; do not match "idle" inside "aim_crouch_idle".
     # A substring selector made the soldier crouch even while standing still.
