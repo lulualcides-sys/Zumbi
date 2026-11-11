@@ -43,6 +43,11 @@ jobs:
         run: godot --headless --editor --path . --import --quit
       - name: Run smoke test
         run: godot --headless --path . --script res://tests/smoke.gd
+      - name: Capture real Godot screenshot (optional rendering QA)
+        continue-on-error: true
+        run: |
+          mkdir -p build
+          xvfb-run -a godot --rendering-driver opengl3 --path . --script res://tests/render_preview.gd
       - name: Export Godot 3D game to HTML5
         run: |
           mkdir -p build
