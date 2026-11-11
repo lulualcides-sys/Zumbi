@@ -6,9 +6,9 @@ void fragment() {
     float lum = dot(albedo.rgb, vec3(0.2126, 0.7152, 0.0722));
     // Raise only cloth/armor medium values. Black visor, undersuit and
     // tactical pockets remain darker: desaturated white/gray near reference.
-    float armor = smoothstep(0.12, 0.40, lum);
-    vec3 white_fabric = vec3(0.78, 0.83, 0.87) * (0.72 + 0.32 * lum);
-    ALBEDO = mix(albedo.rgb, white_fabric, armor * 0.76);
+    float armor = smoothstep(0.09, 0.33, lum);
+    vec3 white_fabric = vec3(0.85, 0.88, 0.90) * (0.83 + 0.17 * lum);
+    ALBEDO = mix(albedo.rgb, white_fabric, armor * 0.90);
     ROUGHNESS = 0.89;
     METALLIC = 0.03;
     ALPHA = albedo.a;
