@@ -64,6 +64,11 @@ def convert_webp(data: bytes) -> tuple[bytes, dict]:
         if len(raw) != size:
             raise ValueError("Bad WebP buffer view")
         with Image.open(io.BytesIO(raw)) as raster:
+            original_dimensions = raster.size
+            # Top-down mobile WebGL rarely displays a gun texture beyond 1K.
+            # Keep channels lossless (normal/metallic maps also use RGB).
+            raster.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
+            prepared_dimensions = raster.size
             png = io.BytesIO()
             raster.convert("RGBA").save(png, format="PNG", optimize=True)
         while len(binbuf) % 4:
@@ -76,7 +81,11 @@ def convert_webp(data: bytes) -> tuple[bytes, dict]:
         })
         image["bufferView"] = new_idx
         image["mimeType"] = "image/png"
-        converted[idx] = len(png.getvalue())
+        converted[idx] = {
+            "bytes": len(png.getvalue()),
+            "original_size": original_dimensions,
+            "prepared_size": prepared_dimensions
+        }
     for tex in doc.get("textures", []):
         ext = tex.get("extensions", {})
         if "EXT_texture_webp" in ext:
