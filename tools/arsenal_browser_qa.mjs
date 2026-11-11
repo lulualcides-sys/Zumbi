@@ -35,7 +35,7 @@ let browser;
 try{
   if(!fs.existsSync(path.resolve(root,'index.html')))throw new Error('Godot Web HTML export absent');
   await new Promise((resolve,reject)=>server.listen(port,'127.0.0.1',err=>err?reject(err):resolve()));
-  browser=await chromium.launch({headless:true,args:[
+  browser=await chromium.launch({headless:true,executablePath:'/usr/bin/chromium',args:[
     '--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader',
     '--disable-dev-shm-usage','--no-sandbox'
   ]});
