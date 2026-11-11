@@ -6,6 +6,7 @@ const Models = preload("res://scripts/ActorFactory.gd")
 const Artwork = preload("res://scripts/VisualAssets.gd")
 const StreetSurface = preload("res://scripts/SurfaceTextures.gd")
 const MobileJoystick = preload("res://scripts/MobileControls.gd")
+const WeaponVisual = preload("res://scripts/WeaponVisual.gd")
 const WALK_SPEED := 5.2
 const RUN_SPEED := 8.0
 const FIRE_INTERVAL := 0.12
@@ -25,6 +26,7 @@ var reticle: Control
 var mobile_controls: Control
 var player_rig: Dictionary = {}
 var player_art: Dictionary = {}
+var weapon_rig: Dictionary = {}
 var zombie_state: Dictionary = {}
 var zombies: Array[CharacterBody3D] = []
 var destructibles: Dictionary = {}
@@ -174,6 +176,8 @@ func _create_player() -> void:
     add_child(player)
     player_rig = Models.survivor(player)
     player_art = Artwork.attach_character(player, player_rig, "survivor")
+    # Imported survivor does not include its own rifle: attach the CC0 model.
+    weapon_rig = WeaponVisual.attach(player)
 
 func _create_camera() -> void:
     camera = Camera3D.new()
@@ -395,7 +399,9 @@ func _fire() -> void:
     fire_cooldown = FIRE_INTERVAL
     ammo -= 1
     recoil = 0.21
-    var muzzle: Marker3D = player_rig["muzzle"]
+    # The actual, visible rifle is the source of all gunfire; never shoot
+    # from the invisible placeholder rifle in the procedural fallback.
+    var muzzle: Marker3D = weapon_rig["muzzle"]
     var start: Vector3 = muzzle.global_position
     var destination := start + aim_direction * 31.0
     var query := PhysicsRayQueryParameters3D.create(start, destination)
@@ -413,6 +419,7 @@ func _fire() -> void:
         else:
             _impact(destination, Color("#a1ac9c"), 3)
     _tracer(start, destination)
+    WeaponVisual.animate_fire(weapon_rig)
     _muzzle_flash(start)
 
 func _tracer(start: Vector3, destination: Vector3) -> void:
