@@ -19,28 +19,45 @@ static func _find_animation_player(root: Node) -> AnimationPlayer:
             return found
     return null
 
+static var _white_texture: Texture2D
+
+static func _neutral_texture() -> Texture2D:
+    if _white_texture == null:
+        var img := Image.create_empty(1, 1, false, Image.FORMAT_RGBA8)
+        img.fill(Color.WHITE)
+        _white_texture = ImageTexture.create_from_image(img)
+    return _white_texture
+
 static func _grade_character(root: Node3D, shader_path: String) -> void:
-    # Preserve imported UVs and animated skeleton, recolor texture only.
+    # Earlier releases silently kept the imported materials unchanged because
+    # the original meshes use untextured materials on several surfaces.
+    # Every surface now gets a shader, with source albedo color as fallback.
     var shader := load(shader_path) as Shader
     if shader == null:
+        push_error("VISUAL_MATERIAL_FAILED: shader missing: " + shader_path)
         return
-    var graded_count := 0
+    var count := 0
     for node in root.find_children("*", "MeshInstance3D", true, false):
         var visual := node as MeshInstance3D
         if visual.mesh == null:
             continue
         for surface in range(visual.mesh.get_surface_count()):
             var original := visual.get_active_material(surface)
+            var tint := Color.WHITE
+            var texture: Texture2D = _neutral_texture()
             if original is BaseMaterial3D:
-                var texture: Texture2D = original.albedo_texture
-                if texture == null:
-                    continue
-                var graded := ShaderMaterial.new()
-                graded.shader = shader
-                graded.set_shader_parameter("base_texture", texture)
-                visual.set_surface_override_material(surface, graded)
-                graded_count += 1
-    root.set_meta("graded_surfaces", graded_count)
+                var imported := original as BaseMaterial3D
+                tint = imported.albedo_color
+                if imported.albedo_texture != null:
+                    texture = imported.albedo_texture
+            var graded := ShaderMaterial.new()
+            graded.shader = shader
+            graded.set_shader_parameter("base_texture", texture)
+            graded.set_shader_parameter("material_tint", tint)
+            visual.set_surface_override_material(surface, graded)
+            count += 1
+    root.set_meta("graded_surfaces", count)
+    print("VISUAL_MATERIALS_APPLIED: ", root.name, " surfaces=", count)
 
 static func attach_character(body: CharacterBody3D, existing_rig: Dictionary, kind: String, variation: int = 0) -> Dictionary:
     var path := _path(kind, variation)
