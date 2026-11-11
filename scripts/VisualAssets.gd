@@ -1,6 +1,7 @@
 extends RefCounted
 ## Import and animate CC0 Quaternius GLTF models with a procedural fallback.
 const MODEL_ROOT := "res://assets/cc0/"
+const TACTICAL_SOLDIER := "res://assets/tactical/soldier.glb"
 
 static func _path(kind: String, variation: int = 0) -> String:
     if kind == "survivor":
@@ -19,6 +20,8 @@ static func _find_animation_player(root: Node) -> AnimationPlayer:
 
 static func attach_character(body: CharacterBody3D, existing_rig: Dictionary, kind: String, variation: int = 0) -> Dictionary:
     var path := _path(kind, variation)
+    if kind == "survivor" and ResourceLoader.exists(TACTICAL_SOLDIER):
+        path = TACTICAL_SOLDIER
     if not ResourceLoader.exists(path):
         return {}
     var packed := load(path) as PackedScene
@@ -31,6 +34,8 @@ static func attach_character(body: CharacterBody3D, existing_rig: Dictionary, ki
         return {}
     model.name = "Art_CC0_" + kind
     model.position = Vector3(0.0, -0.87, 0.0)
+    if path == TACTICAL_SOLDIER:
+        model.name = "TacticalSoldierAnimated"
     body.add_child(model)
     var old_visual: Node3D = existing_rig.get("visual")
     if old_visual != null:
@@ -42,7 +47,7 @@ static func attach_character(body: CharacterBody3D, existing_rig: Dictionary, ki
             available.append(str(name))
         if available.size() > 0:
             animator.play(available[0])
-    return {"root": model, "player": animator, "animations": available, "active": "", "path": path}
+    return {"root": model, "player": animator, "animations": available, "active": "", "path": path, "tactical": path == TACTICAL_SOLDIER}
 
 static func animate(rig: Dictionary, state: String, running: bool = false) -> void:
     if rig.is_empty():
