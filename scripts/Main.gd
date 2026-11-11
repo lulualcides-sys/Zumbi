@@ -158,8 +158,8 @@ func _level() -> void:
         _visual_box(self, Vector3(0.0, 0.019, x), Vector3(39.0, 0.009, 0.011), Color("#22394a"))
 
     # One readable destructible wooden fence is enough for the initial view.
-    for i in range(3):
-        _fence_segment(Vector3(-2.05 + float(i) * 1.90, 0.60, -3.15))
+    for i in range(2):
+        _fence_segment(Vector3(-0.95 + float(i) * 1.90, 0.60, -3.15))
     # Secondary props occupy the far edges so the character remains focal.
     _solid_box(Vector3(-10.8, 0.56, -9.0), Vector3(2.3, 1.12, 1.4), Color("#51616a"), 6)
     _solid_box(Vector3(10.2, 0.45, 7.6), Vector3(1.0, 0.90, 1.1), Color("#4d5a5a"), 4)
@@ -189,13 +189,14 @@ func _create_camera() -> void:
     camera = Camera3D.new()
     camera.name = "ThreeQuarterCamera"
     camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-    camera.size = 8.8
+    camera.size = _camera_vertical_size()
     camera.near = 0.1
     camera.far = 110.0
     camera.current = true
     add_child(camera)
-    camera.global_position = player.global_position + CAMERA_OFFSET + CAMERA_LOOK_AHEAD
-    camera.look_at(player.global_position + CAMERA_LOOK_AHEAD)
+    var first_look := _camera_focus_offset()
+    camera.global_position = player.global_position + CAMERA_OFFSET + first_look
+    camera.look_at(player.global_position + first_look)
 
 func _create_ui() -> void:
     var layer := CanvasLayer.new()
@@ -327,11 +328,23 @@ func _move_player(delta: float) -> void:
     player.velocity.y -= 24.0 * delta
     player.move_and_slide()
 
+func _camera_vertical_size() -> float:
+    var dimensions := get_viewport().get_visible_rect().size
+    # Orthographic camera "size" is its vertical world coverage.
+    # Keeping the 16:9 value in portrait cropped the entire picket fence.
+    return 16.0 if dimensions.y > dimensions.x else 8.8
+
+func _camera_focus_offset() -> Vector3:
+    var dimensions := get_viewport().get_visible_rect().size
+    return Vector3(0.0, 0.0, -0.35) if dimensions.y > dimensions.x else CAMERA_LOOK_AHEAD
+
 func _update_camera(delta: float) -> void:
-    # Camera independente da rotacao do soldado; trava a mesma inclinacao do video.
-    var location := player.global_position + CAMERA_OFFSET + CAMERA_LOOK_AHEAD
+    # Follow independent of soldier yaw and adapt to actual screen orientation.
+    var focus := _camera_focus_offset()
+    var location := player.global_position + CAMERA_OFFSET + focus
     camera.global_position = camera.global_position.lerp(location, minf(1.0, delta * 7.0))
-    camera.look_at(player.global_position + CAMERA_LOOK_AHEAD)
+    camera.look_at(player.global_position + focus)
+    camera.size = _camera_vertical_size()
 
 func _aim_at_mouse() -> void:
     var origin := camera.project_ray_origin(get_viewport().get_mouse_position())
