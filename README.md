@@ -1,19 +1,28 @@
-# Zombie Outbreak — shooter de sobrevivência em Godot 4
+# Zombie Outbreak — Godot 3D
 
-Projeto autoral em desenvolvimento: câmera 3/4 inclinada, movimentação WASD independente da mira, inimigos zumbis, recarga, dano e objetos destrutíveis.
+Shooter de sobrevivencia contra zumbis em **Godot 4.7.2**, com camera 3/4 superior, orientacao independente da mira, ondas de inimigos, impacto dos tiros e cercas destrutiveis. Codigo e modelos procedurais sao originais.
 
-## Executar
-1. Instalar Godot **4.7.2 stable**.
-2. Abrir o `project.godot` no Godot e executar o projeto (F5).
-3. WASD mover • Shift correr • Mouse mirar e atirar • R recarregar • Enter reiniciar após morrer.
+## O que funciona na versao 0.2
+- Sobrevivente low-poly com capacete, colete, mochila, arma e membros animados proceduralmente.
+- Camera 3/4 ortografica com acompanhamento suave. WASD e rotacao pelo mouse independentes.
+- Disparo continuo (hitscan), particulas de impacto, rastro, recuo, carregador de 32 e recarga temporizada.
+- Zumbis low-poly com variantes, locomocao, perseguidor simples, dano por proximidade e efeitos de morte.
+- Cerca de madeira dividida em partes com vida, destrocos e outras caixas destrutiveis.
+- Ondas progressivas, HUD, pontuacao, medkits e municao como pickups.
+- Testes no GitHub Actions e exportacao HTML5.
 
-## Processo automatizado
-O workflow [Godot CI](.github/workflows/godot-ci.yml) instala Godot e os templates de exportação **somente no servidor do GitHub**, importa o projeto, executa teste de carregamento e tenta produzir um build Web como artefato.
+## Controles
+WASD: movimento. Shift: correr. Mouse: mirar; clique esquerdo: atirar. R: recarregar. Enter: recomeçar apos morrer.
 
-## Arsenal e Game Studios
-- [Arsenal](https://github.com/lulualcides-sys/Arsenal): referências de VFX, QA, animações e desenvolvimento.
-- [Claude Code Game Studios](https://github.com/Donchitos/Claude-Code-Game-Studios) (MIT): metodologia de planejamento, revisão e QA. Nesta fase é referência; **Claude Code não foi instalado nem executado**, portanto não exige token da Anthropic.
-- Os meshes atuais são originais e procedurais; não incorporam assets de terceiros.
+## Abrir no Godot
+1. Instale Godot 4.7.2.
+2. Abra \`project.godot\` e execute F5 (ou selecione \`scenes/Main.tscn\`).
+3. Para build web em CI, acesse [Actions](https://github.com/lulualcides-sys/Zumbi/actions) e o artefato \`zombie-outbreak-godot-web\`.
 
-## Limitações
-Protótipo técnico, sem o acabamento visual do vídeo. IA usa perseguição simples sem navmesh; personagens não têm animações finais. Exportação, desempenho e jogabilidade dependem de testes. Nenhuma mudança no Pokémon Torre 2.
+## Referencias e processo
+- [Mapa de requisitos do video](docs/REFERENCIA-VIDEO.md).
+- [Arsenal](https://github.com/lulualcides-sys/Arsenal) para ferramentas e referencias.
+- [Claude Code Game Studios](https://github.com/Donchitos/Claude-Code-Game-Studios), MIT: usamos a metodologia (brief, implementacao focada e QA). O agente Claude nao foi instalado nem precisa de tokens pagos para este build.
+
+## Estado real
+O codigo pode compilar e exportar via GitHub Actions, mas a avaliacao humana da jogabilidade, o equilibrio e a paridade visual com o video exigem playtest. Personagens ainda sao geometria low-poly (nao modelos 3D finais). IA ainda nao usa NavigationServer3D. Sem audio profissional, fases/campanha ou compatibilidade completa com toque em celular. Nenhum codigo do Pokemon Torre 2 e alterado.
