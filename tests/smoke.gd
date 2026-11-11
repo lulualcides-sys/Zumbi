@@ -37,6 +37,11 @@ func _run() -> void:
     if ResourceLoader.exists("res://assets/cc0/survivor.gltf"):
         all_passed = _check(not scene.player_art.is_empty(), "Soldado CC0 nao substituiu o modelo geometrico") and all_passed
         all_passed = _check(scene.player_art.has("root") and is_instance_valid(scene.player_art["root"]), "GLTF do sobrevivente nao carregado") and all_passed
+    if ResourceLoader.exists("res://assets/tactical/soldier.glb"):
+        all_passed = _check(scene.player_art.get("tactical", false), "Tactical character model not activated") and all_passed
+        var tactical_node: Node3D = scene.player_art.get("root")
+        all_passed = _check(tactical_node != null and tactical_node.visible and tactical_node.name == "TacticalSoldierAnimated", "Tactical soldier missing or hidden") and all_passed
+        all_passed = _check(scene.player_art.get("animations", []).size() > 0, "Tactical soldier has no imported animations") and all_passed
     all_passed = _check(scene.wave == 1 and scene.pending_spawns > 0, "Sistema de ondas nao iniciou") and all_passed
     all_passed = _check(scene.destructibles.size() >= 4, "Cercas ou objetos destrutiveis ausentes") and all_passed
 
