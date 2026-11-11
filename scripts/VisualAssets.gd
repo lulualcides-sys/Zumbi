@@ -75,9 +75,8 @@ static func animate(rig: Dictionary, state: String, running: bool = false) -> vo
     if rig.get("active", "") == chosen and player.is_playing():
         return
     rig["active"] = chosen
-    var clip := player.get_animation(chosen)
-    if clip != null and state in ["idle", "walk"]:
-        clip.loop_mode = Animation.LOOP_LINEAR
+    # Imported glTF animations are read-only resources; do not mutate loop_mode.
+    # When a clip finishes the next update will replay its same named state.
     player.play(chosen, 0.18, 1.18 if running else 1.0)
 
 static func add_prop(parent: Node3D, filename: String, where: Vector3, scale_factor: float = 1.0, y_rotation: float = 0.0) -> Node3D:
