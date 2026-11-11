@@ -139,10 +139,10 @@ func _level() -> void:
         var tint := Color("#32454b")
         _visual_box(self, Vector3(float(row) * 2.0, 0.018, 0), Vector3(0.018, 0.008, 39.0), tint)
         _visual_box(self, Vector3(0, 0.018, float(row) * 2.0), Vector3(39.0, 0.008, 0.018), tint)
-    for i in range(5):
-        _fence_segment(Vector3(-4.0 + float(i) * 1.9, 0.65, -3.1))
-    for i in range(4):
-        _fence_segment(Vector3(3.8 + float(i) * 1.9, 0.65, 4.6))
+    for i in range(3):
+        _fence_segment(Vector3(-2.2 + float(i) * 1.9, 0.65, -3.1))
+    for i in range(2):
+        _fence_segment(Vector3(4.2 + float(i) * 1.9, 0.65, 4.6))
     _solid_box(Vector3(-11.7, 0.68, -9.0), Vector3(2.9, 1.35, 1.6), Color("#505d5e"), 7)
     _solid_box(Vector3(12.0, 0.72, 8.0), Vector3(3.2, 1.45, 1.5), Color("#516066"), 7)
     _solid_box(Vector3(-9.0, 0.6, 7.0), Vector3(1.35, 1.18, 1.4), Color("#755c46"), 4)
@@ -195,14 +195,14 @@ func _create_ui() -> void:
     var layer := CanvasLayer.new()
     add_child(layer)
     var panel := ColorRect.new()
-    panel.color = Color(0.035, 0.09, 0.12, 0.78)
+    panel.color = Color(0.035, 0.09, 0.12, 0.54)
     panel.position = Vector2(14, 14)
-    panel.size = Vector2(455, 114)
+    panel.size = Vector2(370, 106)
     layer.add_child(panel)
     hud = Label.new()
     hud.position = Vector2(30, 23)
     hud.add_theme_color_override("font_color", Color("#e3efe9"))
-    hud.add_theme_font_size_override("font_size", 21)
+    hud.add_theme_font_size_override("font_size", 18)
     layer.add_child(hud)
     footer = Label.new()
     footer.anchor_top = 1.0
