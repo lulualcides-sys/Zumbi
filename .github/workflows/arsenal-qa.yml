@@ -1,0 +1,117 @@
+name: Arsenal + Game Studios — real visual QA (no auto-publish)
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/**'
+      - 'scenes/**'
+      - 'shaders/**'
+      - 'tools/**'
+      - 'tests/**'
+      - 'assets/**'
+      - 'project.godot'
+      - '.github/workflows/arsenal-qa.yml'
+  push:
+    branches: ['feat/arsenal-actions-integration']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: arsenal-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  godot-browser-art-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout Zombie Outbreak project
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Download our Arsenal (pinned revision, references only)
+        uses: actions/checkout@v4
+        with:
+          repository: lulualcides-sys/Arsenal
+          ref: 94ebfdb3b7ff8c5ceb586016d47c4f5e9c939e4e
+          path: .ci-sources/arsenal
+          persist-credentials: false
+          submodules: false
+
+      - name: Download Claude Code Game Studios (pinned QA rubrics, NO agents executed)
+        uses: actions/checkout@v4
+        with:
+          repository: Donchitos/Claude-Code-Game-Studios
+          ref: abc0de79d6ceb0b5d7aa693945849b3937afbe6a
+          path: .ci-sources/ccgs
+          persist-credentials: false
+          submodules: false
+
+      - name: Install free Godot 4 + Web templates
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: true
+
+      - name: Install original CC0 game models
+        run: python3 tools/install_cc0_art.py
+
+      - name: Download and verify animated military character
+        run: python3 tools/install_tactical_art.py
+
+      - name: Asset inventory — CCGS rubric adapted to real project files
+        run: python3 tools/arsenal_asset_audit.py
+
+      - name: Import Godot GLB/gltf animations and scripts
+        run: godot --headless --editor --path . --import --quit
+
+      - name: Validate game logic / real weapon / character loading
+        run: godot --headless --path . --script res://tests/smoke.gd
+
+      - name: Validate left joystick, auto-target and automatic shots
+        run: godot --headless --path . --script res://tests/mobile_controls.gd
+
+      - name: Render real Godot gameplay reference screenshot
+        run: |
+          mkdir -p build/qa
+          set -o pipefail
+          xvfb-run -a godot --rendering-driver opengl3 --path . --script res://tests/render_preview.gd 2>&1 | tee build/qa/godot-render.log
+          if grep -q 'SCRIPT ERROR:' build/qa/godot-render.log; then
+            echo 'Fail: GDScript runtime error in real render'
+            exit 1
+          fi
+          test -s build/preview.png
+
+      - name: Export real Godot Web build (not a mockup)
+        run: |
+          godot --headless --path . --export-release "Web" build/index.html
+          test -s build/index.html
+
+      - name: Install open-source Playwright via npm (CI only)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Use preinstalled open-source Chromium and install Playwright
+        run: |
+          command -v chromium
+          chromium --version
+          npm install --no-save --ignore-scripts --no-fund --no-audit playwright@1.56.1
+
+      - name: Verify desktop WebGL + mobile touch and save screenshots
+        run: node tools/arsenal_browser_qa.mjs
+
+      - name: Upload audit, browser screenshots and real Godot preview
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zumbi-arsenal-qa-${{ github.run_id }}
+          path: |
+            build/qa/
+            build/preview.png
+          if-no-files-found: warn
+          retention-days: 14
