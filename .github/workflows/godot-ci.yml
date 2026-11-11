@@ -2,7 +2,7 @@ name: Godot 4 Zombie Outbreak - validation and web build
 
 on:
   push:
-    branches: [main, feat/godot-zombie-prototype]
+    branches: [main, 'feat/**']
   pull_request:
   workflow_dispatch:
 
