@@ -23,6 +23,8 @@ jobs:
           include-templates: true
       - name: Verify Godot version
         run: godot --version
+      - name: Install verified CC0 game models
+        run: python3 tools/install_cc0_art.py
       - name: Import project and parse scripts
         run: godot --headless --editor --path . --import --quit
       - name: Run scripted scene smoke test
