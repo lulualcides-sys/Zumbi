@@ -52,16 +52,15 @@ static func animate(rig: Dictionary, state: String, running: bool = false) -> vo
         return
     var names: Array = rig.get("animations", [])
     var preferred: Array[String] = []
-    var human := rig.get("kind", "") == "survivor"
     match state:
         "walk":
-            preferred = (["run_gun", "run", "sprint", "jog", "walk_gun", "walk"] if running else ["walk_gun", "walk", "jog", "run_gun", "run"]) if human else (["run_arms", "run", "walk"] if running else ["walk", "run"])
+            preferred = ["run", "sprint", "jog", "walk"] if running else ["walk", "jog", "run"]
         "attack":
-            preferred = ["shoot", "fire", "attack", "run_gun"] if human else ["idle_attack", "punch", "run_attack", "attack"]
+            preferred = ["shoot", "fire", "attack", "rifle"]
         "death":
             preferred = ["death", "die", "dead"]
         _:
-            preferred = ["idle_gun", "idle", "breath", "stand"] if human else ["idle", "stand"]
+            preferred = ["idle", "breath", "stand"]
     var chosen := ""
     for prefix in preferred:
         for name in names:
@@ -75,9 +74,7 @@ static func animate(rig: Dictionary, state: String, running: bool = false) -> vo
     if rig.get("active", "") == chosen and player.is_playing():
         return
     rig["active"] = chosen
-    # Imported glTF animations are read-only resources; do not mutate loop_mode.
-    # When a clip finishes the next update will replay its same named state.
-    player.play(chosen, 0.18, 1.18 if running else 1.0)
+    player.play(chosen, 0.16, 1.22 if running else 1.0)
 
 static func add_prop(parent: Node3D, filename: String, where: Vector3, scale_factor: float = 1.0, y_rotation: float = 0.0) -> Node3D:
     var allowed := ["barrel.gltf", "pallet.gltf", "traffic_barrier.gltf", "container_green.gltf"]
