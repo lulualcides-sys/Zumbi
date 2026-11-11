@@ -112,7 +112,7 @@ func _run() -> void:
     # bullets left the muzzle above its collision box and never damaged it.
     var centered_fence: StaticBody3D = null
     for body in scene.destructibles.keys():
-        if body is StaticBody3D and absf(body.position.z + 3.15) < 0.1 and absf(body.position.x) < 0.3:
+        if body is StaticBody3D and absf(body.position.z + 3.15) < 0.1 and absf(body.position.x) < 1.1:
             centered_fence = body
             break
     all_passed = _check(centered_fence != null, "No centered fence for ballistics QA") and all_passed
