@@ -51,16 +51,16 @@ static func animate(rig: Dictionary, state: String, running: bool = false) -> vo
     if player == null:
         return
     var names: Array = rig.get("animations", [])
-    var preferred: Array[String] = []
+    var preferred: Array = []
     match state:
         "walk":
-            preferred = ["run", "sprint", "jog", "walk"] if running else ["walk", "jog", "run"]
+            preferred = ["run_gun", "run", "sprint", "jog", "walk"] if running else ["walk_gun", "walk", "jog", "run"]
         "attack":
             preferred = ["shoot", "fire", "attack", "rifle"]
         "death":
             preferred = ["death", "die", "dead"]
         _:
-            preferred = ["idle", "breath", "stand"]
+            preferred = ["idle_gun", "idle", "breath", "stand"]
     var chosen := ""
     for prefix in preferred:
         for name in names:
