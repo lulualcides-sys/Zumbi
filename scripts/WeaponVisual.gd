@@ -38,6 +38,22 @@ static func _fallback_rifle(root: Node3D) -> void:
     _box(root, Vector3(0, -0.02, 0.70), Vector3(0.08, 0.08, 0.82), Color("#1b2125"))
     _box(root, Vector3(0, 0.08, 0.33), Vector3(0.16, 0.06, 0.35), Color("#5a6267"))
 
+static func _grade_rifle(model: Node3D) -> void:
+    var shader := load("res://shaders/rifle_gunmetal.gdshader") as Shader
+    if shader == null:
+        return
+    for node in model.find_children("*", "MeshInstance3D", true, false):
+        var mesh := node as MeshInstance3D
+        if mesh.mesh == null:
+            continue
+        for surface in range(mesh.mesh.get_surface_count()):
+            var material := mesh.get_active_material(surface)
+            if material is BaseMaterial3D and material.albedo_texture != null:
+                var grade := ShaderMaterial.new()
+                grade.shader = shader
+                grade.set_shader_parameter("base_texture", material.albedo_texture)
+                mesh.set_surface_override_material(surface, grade)
+
 static func attach(body: CharacterBody3D) -> Dictionary:
     var holder := Node3D.new()
     holder.name = "VisibleRifleMount"
@@ -53,6 +69,7 @@ static func attach(body: CharacterBody3D) -> Dictionary:
                 model.name = "VisibleCC0Rifle"
                 model.scale = Vector3.ONE * RIFLE_SCALE
                 holder.add_child(model)
+                _grade_rifle(model)
                 source_ok = true
     if not source_ok:
         _fallback_rifle(holder)
