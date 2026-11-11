@@ -3,6 +3,7 @@ extends Node3D
 ## Modelos e decoracoes sao primitivos originais; nenhum download externo em runtime.
 
 const Models = preload("res://scripts/ActorFactory.gd")
+const Artwork = preload("res://scripts/VisualAssets.gd")
 const WALK_SPEED := 5.2
 const RUN_SPEED := 8.0
 const FIRE_INTERVAL := 0.12
@@ -10,7 +11,7 @@ const RELOAD_SECONDS := 1.45
 const MAG_SIZE := 32
 const MAX_ENEMIES := 26
 const WORLD_LIMIT := 17.0
-const CAMERA_OFFSET := Vector3(0.0, 20.5, 9.0)
+const CAMERA_OFFSET := Vector3(0.0, 15.5, 13.4)
 
 var rng := RandomNumberGenerator.new()
 var player: CharacterBody3D
@@ -19,6 +20,7 @@ var hud: Label
 var footer: Label
 var reticle: Control
 var player_rig: Dictionary = {}
+var player_art: Dictionary = {}
 var zombie_state: Dictionary = {}
 var zombies: Array[CharacterBody3D] = []
 var destructibles: Dictionary = {}
@@ -58,13 +60,13 @@ func _environment() -> void:
     env.background_color = Color("#122027")
     env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
     env.ambient_light_color = Color("#7c95a0")
-    env.ambient_light_energy = 0.42
+    env.ambient_light_energy = 0.60
     world.environment = env
     add_child(world)
     var moon := DirectionalLight3D.new()
     moon.rotation_degrees = Vector3(-57, -31, 0)
     moon.light_color = Color("#a6c5d6")
-    moon.light_energy = 1.1
+    moon.light_energy = 1.35
     moon.shadow_enabled = true
     add_child(moon)
 
@@ -147,6 +149,13 @@ func _level() -> void:
     _street_lamp(Vector3(-15, 0, -13))
     _street_lamp(Vector3(14, 0, 13))
     _street_lamp(Vector3(14, 0, -12))
+    # Props CC0 com geometria, UVs, materiais e silhuetas reais. Fallback
+    # permanece jogavel quando o pacote visual ainda nao foi instalado.
+    Artwork.add_prop(self, "container_green.gltf", Vector3(-12, 0.02, -13), 0.77, 0.22)
+    Artwork.add_prop(self, "pallet.gltf", Vector3(-8.5, 0.02, -8.0), 1.0, 0.45)
+    Artwork.add_prop(self, "barrel.gltf", Vector3(9.7, 0.02, -6.8), 1.0)
+    Artwork.add_prop(self, "barrel.gltf", Vector3(10.6, 0.02, -7.1), 1.0)
+    Artwork.add_prop(self, "traffic_barrier.gltf", Vector3(-8.8, 0.02, 11), 1.15, -0.32)
 
 func _create_player() -> void:
     player = CharacterBody3D.new()
@@ -154,12 +163,13 @@ func _create_player() -> void:
     player.position = Vector3(0, 0.88, 0)
     add_child(player)
     player_rig = Models.survivor(player)
+    player_art = Artwork.attach_character(player, player_rig, "survivor")
 
 func _create_camera() -> void:
     camera = Camera3D.new()
     camera.name = "ThreeQuarterCamera"
     camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-    camera.size = 18.0
+    camera.size = 13.9
     camera.near = 0.1
     camera.far = 110.0
     camera.current = true
@@ -286,6 +296,7 @@ func _animate_survivor(delta: float) -> void:
     right_leg.rotation.x = lerpf(right_leg.rotation.x, -sway, minf(1, delta * 11))
     left_arm.rotation.x = lerpf(left_arm.rotation.x, -0.23 - recoil, minf(1, delta * 12))
     right_arm.rotation.x = lerpf(right_arm.rotation.x, -0.23 - recoil, minf(1, delta * 12))
+    Artwork.animate(player_art, "walk" if moving else "idle", moving and Input.is_key_pressed(KEY_SHIFT))
 
 func _fire() -> void:
     if fire_cooldown > 0 or reload_timer > 0:
@@ -428,8 +439,9 @@ func _spawn_zombie() -> void:
     add_child(zombie)
     var variant := rng.randi_range(0, 2)
     var rig: Dictionary = Models.zombie(zombie, variant)
+    var art := Artwork.attach_character(zombie, rig, "zombie", variant)
     zombies.append(zombie)
-    zombie_state[zombie] = {"health": 2 + mini(wave / 3, 3), "speed": rng.randf_range(1.8, 2.55) + float(wave) * 0.08, "rig": rig, "phase": rng.randf_range(0, TAU), "stagger": 0.0}
+    zombie_state[zombie] = {"health": 2 + mini(wave / 3, 3), "speed": rng.randf_range(1.8, 2.55) + float(wave) * 0.08, "rig": rig, "phase": rng.randf_range(0, TAU), "stagger": 0.0, "art": art}
 
 func _move_zombies(delta: float) -> void:
     for zombie in zombies:
@@ -462,6 +474,7 @@ func _move_zombies(delta: float) -> void:
         var right_leg: Node3D = rig["right_leg"]
         left_leg.rotation.x = stride
         right_leg.rotation.x = -stride
+        Artwork.animate(state.get("art", {}), "walk")
         if zombie.global_position.distance_to(player.global_position) < 1.1 and damage_cooldown <= 0:
             hp = maxi(0, hp - 12)
             damage_cooldown = 0.85
