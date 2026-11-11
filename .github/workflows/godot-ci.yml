@@ -53,7 +53,7 @@ jobs:
         run: |
           mkdir -p build
           set -o pipefail
-          xvfb-run -a godot --rendering-driver opengl3 --path . --script res://tests/render_preview.gd 2>&1 | tee build/render.log
+          xvfb-run -a -s "-screen 0 1920x1600x24" godot --rendering-driver opengl3 --path . --script res://tests/render_preview.gd 2>&1 | tee build/render.log
           if grep -q 'SCRIPT ERROR:' build/render.log; then
             echo 'Runtime GDScript error during visual rendering'
             exit 1
