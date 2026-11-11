@@ -11,7 +11,7 @@ const RELOAD_SECONDS := 1.45
 const MAG_SIZE := 32
 const MAX_ENEMIES := 26
 const WORLD_LIMIT := 17.0
-const CAMERA_OFFSET := Vector3(0.0, 15.5, 13.4)
+const CAMERA_OFFSET := Vector3(0.0, 9.3, 14.2)
 
 var rng := RandomNumberGenerator.new()
 var player: CharacterBody3D
@@ -129,9 +129,9 @@ func _level() -> void:
         _visual_box(self, Vector3(float(row) * 2.0, 0.018, 0), Vector3(0.018, 0.008, 39.0), tint)
         _visual_box(self, Vector3(0, 0.018, float(row) * 2.0), Vector3(39.0, 0.008, 0.018), tint)
     for i in range(5):
-        _fence_segment(Vector3(-4.0 + float(i) * 1.9, 0.65, -5.0))
+        _fence_segment(Vector3(-4.0 + float(i) * 1.9, 0.65, -3.1))
     for i in range(4):
-        _fence_segment(Vector3(3.8 + float(i) * 1.9, 0.65, 6.4))
+        _fence_segment(Vector3(3.8 + float(i) * 1.9, 0.65, 4.6))
     _solid_box(Vector3(-11.7, 0.68, -9.0), Vector3(2.9, 1.35, 1.6), Color("#505d5e"), 7)
     _solid_box(Vector3(12.0, 0.72, 8.0), Vector3(3.2, 1.45, 1.5), Color("#516066"), 7)
     _solid_box(Vector3(-9.0, 0.6, 7.0), Vector3(1.35, 1.18, 1.4), Color("#755c46"), 4)
@@ -149,13 +149,14 @@ func _level() -> void:
     _street_lamp(Vector3(-15, 0, -13))
     _street_lamp(Vector3(14, 0, 13))
     _street_lamp(Vector3(14, 0, -12))
+    _street_lamp(Vector3(6.0, 0, -7.6))
     # Props CC0 com geometria, UVs, materiais e silhuetas reais. Fallback
     # permanece jogavel quando o pacote visual ainda nao foi instalado.
     Artwork.add_prop(self, "container_green.gltf", Vector3(-12, 0.02, -13), 0.77, 0.22)
-    Artwork.add_prop(self, "pallet.gltf", Vector3(-8.5, 0.02, -8.0), 1.0, 0.45)
-    Artwork.add_prop(self, "barrel.gltf", Vector3(9.7, 0.02, -6.8), 1.0)
-    Artwork.add_prop(self, "barrel.gltf", Vector3(10.6, 0.02, -7.1), 1.0)
-    Artwork.add_prop(self, "traffic_barrier.gltf", Vector3(-8.8, 0.02, 11), 1.15, -0.32)
+    Artwork.add_prop(self, "pallet.gltf", Vector3(-3.1, 0.02, 2.1), 1.0, 0.45)
+    Artwork.add_prop(self, "barrel.gltf", Vector3(4.8, 0.02, -2.4), 1.0)
+    Artwork.add_prop(self, "barrel.gltf", Vector3(5.6, 0.02, -2.2), 1.0)
+    Artwork.add_prop(self, "traffic_barrier.gltf", Vector3(-5.6, 0.02, 1.0), 1.15, -0.32)
 
 func _create_player() -> void:
     player = CharacterBody3D.new()
@@ -169,7 +170,7 @@ func _create_camera() -> void:
     camera = Camera3D.new()
     camera.name = "ThreeQuarterCamera"
     camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-    camera.size = 13.9
+    camera.size = 8.8
     camera.near = 0.1
     camera.far = 110.0
     camera.current = true
@@ -409,6 +410,11 @@ func _start_wave() -> void:
     pending_spawns = mini(5 + wave * 3, MAX_ENEMIES)
     spawn_timer = 0.6
     wave_delay = 0
+    # Mostrar o combate ja no primeiro quadro, em vez de iniciar com arena vazia.
+    if wave == 1:
+        for angle in [0.55, 2.35, 4.65]:
+            _spawn_zombie(5.0, float(angle))
+            pending_spawns -= 1
 
 func _advance_wave(delta: float) -> void:
     if pending_spawns > 0:
@@ -425,11 +431,11 @@ func _advance_wave(delta: float) -> void:
     else:
         wave_delay = 0.0
 
-func _spawn_zombie() -> void:
+func _spawn_zombie(distance: float = 15.0, fixed_angle: float = -1.0) -> void:
     if zombies.size() >= MAX_ENEMIES:
         return
-    var angle := rng.randf_range(0, TAU)
-    var location := player.global_position + Vector3(cos(angle) * 15, 0, sin(angle) * 15)
+    var angle := fixed_angle if fixed_angle >= 0.0 else rng.randf_range(0, TAU)
+    var location := player.global_position + Vector3(cos(angle) * distance, 0, sin(angle) * distance)
     location.x = clampf(location.x, -WORLD_LIMIT, WORLD_LIMIT)
     location.z = clampf(location.z, -WORLD_LIMIT, WORLD_LIMIT)
     location.y = 0.88
