@@ -56,9 +56,6 @@ static func attach_character(body: CharacterBody3D, existing_rig: Dictionary, ki
     model.position = Vector3(0.0, -0.87, 0.0)
     if path == TACTICAL_SOLDIER:
         model.name = "TacticalSoldierAnimated"
-        # Source rig faces -Z. Our combat/muzzle logic and Quaternius gun face +Z.
-        # Rotate only the imported body so the rifle and the animated arms agree.
-        model.rotation.y = PI
     body.add_child(model)
     if kind == "zombie":
         _grade_character(model, "res://shaders/zombie_grade.gdshader")
