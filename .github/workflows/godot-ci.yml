@@ -47,6 +47,11 @@ jobs:
             exit 1
           fi
           test -s build/preview.png
+      - name: Compare actual animated soldier poses before publishing
+        run: |
+          xvfb-run -a godot --rendering-driver opengl3 --path . --script res://tests/pose_gallery.gd
+          test -s build/pose_ready_idle.png
+          test -s build/pose_aim_idle.png
       - name: Export browser version
         run: |
           mkdir -p build

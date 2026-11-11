@@ -42,9 +42,9 @@ static func _surface_palette(material_name: String, infected: bool) -> Color:
             "soldier_glass": return Color("#151c1c")
             _: return Color("#4b5551")
     match key:
-        "soldier_armor": return Color("#dee5e9")
-        "soldier_clothes": return Color("#34373c")
-        "soldier_fabric": return Color("#34383d")
+        "soldier_armor": return Color("#33383e")
+        "soldier_clothes": return Color("#d4dadb")
+        "soldier_fabric": return Color("#bcc6cc")
         "soldier_iron": return Color("#454d55")
         "soldier_metal": return Color("#555e64")
         "soldier_elements": return Color("#252b30")
