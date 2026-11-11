@@ -75,6 +75,9 @@ func _run() -> void:
         var enemy_art: Dictionary = scene.zombie_state[target].get("art", {})
         var enemy_mesh: Node3D = enemy_art.get("root")
         all_passed = _check(bool(enemy_art.get("infected", false)), "Cartoon zombie still being used in reference visual mode") and all_passed
+        if ResourceLoader.exists("res://assets/tactical/infected.glb"):
+            all_passed = _check(enemy_art.get("path", "").ends_with("/infected.glb"), "Optimized infected asset not loaded") and all_passed
+            all_passed = _check(enemy_art.get("animations", []).size() <= 6, "Unused tactical animation clips remain on enemies") and all_passed
         all_passed = _check(enemy_mesh != null and int(enemy_mesh.get_meta("graded_surfaces", 0)) > 0, "Infected material was not applied to the soldier mesh") and all_passed
     var hp_before: int = scene.zombie_state[target]["health"]
     var score_before: int = scene.score

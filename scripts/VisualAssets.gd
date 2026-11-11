@@ -2,6 +2,7 @@ extends RefCounted
 ## Import and animate CC0 Quaternius GLTF models with a procedural fallback.
 const MODEL_ROOT := "res://assets/cc0/"
 const TACTICAL_SOLDIER := "res://assets/tactical/soldier.glb"
+const INFECTED_SOLDIER := "res://assets/tactical/infected.glb"
 
 static func _path(kind: String, variation: int = 0) -> String:
     if kind == "survivor":
@@ -45,8 +46,13 @@ static func attach_character(body: CharacterBody3D, existing_rig: Dictionary, ki
     var path := _path(kind, variation)
     # Infected tactical humans match the detail and silhouette of the player.
     # Avoid mixing a realistic soldier with cartoon Quaternius zombie models.
-    if ResourceLoader.exists(TACTICAL_SOLDIER):
+    if kind == "survivor" and ResourceLoader.exists(TACTICAL_SOLDIER):
         path = TACTICAL_SOLDIER
+    elif kind == "zombie":
+        if ResourceLoader.exists(INFECTED_SOLDIER):
+            path = INFECTED_SOLDIER
+        elif ResourceLoader.exists(TACTICAL_SOLDIER):
+            path = TACTICAL_SOLDIER
     if not ResourceLoader.exists(path):
         return {}
     var packed := load(path) as PackedScene
@@ -59,10 +65,10 @@ static func attach_character(body: CharacterBody3D, existing_rig: Dictionary, ki
         return {}
     model.name = "Art_CC0_" + kind
     model.position = Vector3(0.0, -0.87, 0.0)
-    if path == TACTICAL_SOLDIER:
+    if path == TACTICAL_SOLDIER or path == INFECTED_SOLDIER:
         model.name = "TacticalSoldierAnimated" if kind == "survivor" else "InfectedSoldierAnimated"
         if kind == "zombie":
-            var height_scale := [0.92, 1.01, 1.09][posmod(variation, 3)]
+            var height_scale: float = float([0.92, 1.01, 1.09][posmod(variation, 3)])
             model.scale = Vector3(1.0, height_scale, 1.0)
     body.add_child(model)
     if kind == "zombie":
@@ -81,7 +87,7 @@ static func attach_character(body: CharacterBody3D, existing_rig: Dictionary, ki
             animator.play(available[0])
     return {"root": model, "player": animator, "animations": available, "active": "", "path": path,
             "tactical": path == TACTICAL_SOLDIER and kind == "survivor",
-            "infected": path == TACTICAL_SOLDIER and kind == "zombie"}
+            "infected": (path == TACTICAL_SOLDIER or path == INFECTED_SOLDIER) and kind == "zombie"}
 
 static func animate(rig: Dictionary, state: String, running: bool = false) -> void:
     if rig.is_empty():

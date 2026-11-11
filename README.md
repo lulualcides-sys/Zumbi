@@ -34,3 +34,7 @@ O codigo pode compilar e exportar via GitHub Actions, mas a avaliacao humana da 
 
 ## Problema corrigido — arma invisivel
 O modelo 3D importado substituia o sobrevivente procedural e ocultava a unica arma existente. Agora o build instala separadamente `Rifle.gltf`, posiciona o modelo visivel junto ao torso e conecta tiros/flash ao marcador na ponta do cano. O novo enquadramento 3/4 aproxima o personagem. Validacao de video no navegador e jogo mobile real ainda sao criterios de qualidade pendentes.
+
+
+## Direcao visual v0.6 (em revisao)
+A arena de referencia adota piso azul-acinzentado com grade discreta e camera inclinada mais alta, sem faixas de asfalto ou barris de cor saturada. Inimigos sao infectados humanoides 3D, com arquivo `infected.glb` derivado do soldado licenciado contendo apenas seis clips para reduzir custo no celular. **Nao publicar como visual final antes de comparar a captura real** com o video enviado. As funcionalidades de movimento, controle unico e tiro automatico permanecem.
