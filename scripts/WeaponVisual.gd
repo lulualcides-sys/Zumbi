@@ -154,7 +154,7 @@ static func align_to_hands(rig: Dictionary, body: CharacterBody3D, delta: float)
     var hands_mid: Vector3 = (right_global + left_global) * 0.5
     var target: Vector3 = body.to_local(hands_mid) + Vector3(0.0, -0.03, 0.18)
     target.x = clampf(target.x, -0.37, 0.37)
-    target.y = clampf(target.y, 0.30, 0.95)
+    target.y = clampf(maxf(target.y + 0.17, 0.57), 0.57, 1.03)
     target.z = clampf(target.z, -0.12, 0.65)
     mount.position = mount.position.lerp(target, minf(1.0, delta * 22.0))
     if not rig.get("first_alignment_logged", false):

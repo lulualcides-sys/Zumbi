@@ -28,6 +28,31 @@ static func _neutral_texture() -> Texture2D:
         _white_texture = ImageTexture.create_from_image(img)
     return _white_texture
 
+static func _surface_palette(material_name: String, infected: bool) -> Color:
+    var key := material_name.to_lower()
+    if infected:
+        match key:
+            "soldier_armor": return Color("#5b6662")
+            "soldier_clothes": return Color("#434b49")
+            "soldier_fabric": return Color("#353b3b")
+            "soldier_iron", "soldier_metal": return Color("#333e41")
+            "soldier_elements": return Color("#4c4d44")
+            "soldier_flesh", "soldier_skin": return Color("#788376")
+            "soldier_shoes", "soldier_boots": return Color("#292e2d")
+            "soldier_glass": return Color("#151c1c")
+            _: return Color("#4b5551")
+    match key:
+        "soldier_armor": return Color("#dee5e9")
+        "soldier_clothes": return Color("#34373c")
+        "soldier_fabric": return Color("#34383d")
+        "soldier_iron": return Color("#454d55")
+        "soldier_metal": return Color("#555e64")
+        "soldier_elements": return Color("#252b30")
+        "soldier_flesh", "soldier_skin": return Color("#867f76")
+        "soldier_shoes", "soldier_boots": return Color("#22262b")
+        "soldier_glass": return Color("#101820")
+        _: return Color("#737b81")
+
 static func _grade_character(root: Node3D, shader_path: String) -> void:
     # Earlier releases silently kept the imported materials unchanged because
     # the original meshes use untextured materials on several surfaces.
@@ -43,8 +68,6 @@ static func _grade_character(root: Node3D, shader_path: String) -> void:
             continue
         for surface in range(visual.mesh.get_surface_count()):
             var original := visual.get_active_material(surface)
-            if root.name == "TacticalSoldierAnimated":
-                print("TACTICAL_MATERIAL_SOURCE: surface=", surface, " class=", original.get_class() if original != null else "NULL", " name=", original.resource_name if original != null else "NONE")
             var tint := Color.WHITE
             var texture: Texture2D = _neutral_texture()
             if original is BaseMaterial3D:
@@ -56,6 +79,7 @@ static func _grade_character(root: Node3D, shader_path: String) -> void:
             graded.shader = shader
             graded.set_shader_parameter("base_texture", texture)
             graded.set_shader_parameter("material_tint", tint)
+            graded.set_shader_parameter("palette_color", _surface_palette(original.resource_name if original != null else "", root.name == "InfectedSoldierAnimated"))
             visual.set_surface_override_material(surface, graded)
             count += 1
     root.set_meta("graded_surfaces", count)
@@ -123,7 +147,7 @@ static func animate(rig: Dictionary, state: String, running: bool = false) -> vo
             if infected:
                 preferred = ["run", "mocap_walk_F", "walk"] if running else ["walk", "mocap_walk_F", "run"]
             elif tactical:
-                preferred = ["aim_run", "ready_run", "run", "mocap_run_F", "aim_walk"] if running else ["aim_walk", "ready_walk", "walk", "mocap_walk_F"]
+                preferred = ["ready_run", "aim_run", "run", "mocap_run_F"] if running else ["ready_walk", "aim_walk", "walk", "mocap_walk_F"]
             else:
                 preferred = ["run_gun", "run", "walk_gun", "walk"] if running else ["walk_gun", "walk", "run"]
         "attack":

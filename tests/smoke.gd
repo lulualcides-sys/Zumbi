@@ -28,7 +28,7 @@ func _run() -> void:
     all_passed = _check(gun_muzzle != null and gun_muzzle.global_position.distance_to(scene.player.global_position) < 2.5, "Boca do cano fora de posicao") and all_passed
     if ResourceLoader.exists("res://assets/cc0/rifle.gltf"):
         all_passed = _check(bool(scene.weapon_rig.get("source_ok", false)), "Fuzil GLTF CC0 nao instanciado") and all_passed
-        all_passed = _check(gun_mount.get_node_or_null("VisibleCC0Rifle") != null, "Soldado esta sem o rifle visivel") and all_passed
+        all_passed = _check(gun_mount.get_node_or_null("GunVisualWithRecoil/VisibleCC0Rifle") != null, "Soldado esta sem o rifle visivel") and all_passed
 
     if not scene.player_art.is_empty():
         scene._animate_survivor(0.016)
