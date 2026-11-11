@@ -67,7 +67,11 @@ static func _grade_character(root: Node3D, shader_path: String) -> void:
         if visual.mesh == null:
             continue
         for surface in range(visual.mesh.get_surface_count()):
-            var original := visual.get_active_material(surface)
+            var original: Material = visual.get_surface_override_material(surface)
+            if original == null:
+                original = visual.mesh.surface_get_material(surface)
+            if original == null:
+                original = visual.material_override
             var tint := Color.WHITE
             var texture: Texture2D = _neutral_texture()
             if original is BaseMaterial3D:
