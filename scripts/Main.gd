@@ -15,7 +15,7 @@ const MAG_SIZE := 32
 const MAX_ENEMIES := 26
 const WORLD_LIMIT := 17.0
 const MOBILE_AUTO_RANGE := 14.0
-const CAMERA_OFFSET := Vector3(3.6, 9.0, 14.5)
+const CAMERA_OFFSET := Vector3(7.6, 9.3, 12.0)
 
 var rng := RandomNumberGenerator.new()
 var player: CharacterBody3D
@@ -298,7 +298,15 @@ func _move_player(delta: float) -> void:
         motion.x += 1.0
     if _mobile_enabled():
         var analog: Vector2 = mobile_controls.get("direction")
-        motion = Vector3(analog.x, 0.0, analog.y).limit_length(1.0)
+        # Landscape joystick is camera-relative; "up" means up on screen
+        # even when the camera moves to the diagonal view of the video.
+        var screen_right := camera.global_transform.basis.x
+        var screen_up := -camera.global_transform.basis.z
+        screen_right.y = 0.0
+        screen_up.y = 0.0
+        screen_right = screen_right.normalized()
+        screen_up = screen_up.normalized()
+        motion = (screen_right * analog.x - screen_up * analog.y).limit_length(1.0)
     else:
         motion = motion.normalized()
     last_move = motion
