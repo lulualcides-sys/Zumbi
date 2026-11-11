@@ -3,7 +3,8 @@ extends RefCounted
 ## O glTF Rifle tem cano ao longo do eixo +Z (bounding box verificado).
 ## Sem dependencias de redes em tempo de execucao.
 const RIFLE_PATH := "res://assets/cc0/rifle.gltf"
-const RIFLE_OFFSET := Vector3(0.09, 0.10, 0.43)
+# Raise receiver to the animated tactical rifle-ready pose; previous mount was hip-high.
+const RIFLE_OFFSET := Vector3(0.09, 0.56, 0.43)
 const RIFLE_SCALE := 0.82
 
 static func _metal(tint: Color, glow: bool = false) -> StandardMaterial3D:
