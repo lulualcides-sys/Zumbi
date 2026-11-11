@@ -31,6 +31,17 @@ jobs:
         run: python3 tools/install_cc0_art.py
       - name: Install and inspect licensed tactical soldier
         run: python3 tools/install_tactical_art.py
+      - name: Download verified licensed M4A1
+        run: python3 tools/download_m4a1.py
+      - name: Install Blender for compatible weapon preparation
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends blender
+          blender --version
+      - name: Build and align real M4A1 with Blender
+        run: |
+          blender -b --factory-startup -t 2 --python tools/blender/prepare_m4a1.py -- assets/tactical/source_m4a1.glb assets/tactical/m4a1-ready.glb
+          python3 tools/verify_m4a1.py
       - name: Import project and parse scripts
         run: godot --headless --editor --path . --import --quit
       - name: Run scripted scene smoke test
