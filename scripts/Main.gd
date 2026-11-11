@@ -4,6 +4,7 @@ extends Node3D
 
 const Models = preload("res://scripts/ActorFactory.gd")
 const Artwork = preload("res://scripts/VisualAssets.gd")
+const StreetSurface = preload("res://scripts/SurfaceTextures.gd")
 const WALK_SPEED := 5.2
 const RUN_SPEED := 8.0
 const FIRE_INTERVAL := 0.12
@@ -117,9 +118,13 @@ func _street_lamp(at: Vector3) -> void:
     add_child(light)
 
 func _level() -> void:
-    _solid_box(Vector3(0, -0.38, 0), Vector3(40, 0.76, 40), Color("#26353b"))
-    _visual_box(self, Vector3(0, 0.009, 0), Vector3(10.0, 0.024, 39.0), Color("#303d40"))
-    _visual_box(self, Vector3(0, 0.012, 0), Vector3(39.0, 0.024, 10.0), Color("#303d40"))
+    var ground := _solid_box(Vector3(0, -0.38, 0), Vector3(40, 0.76, 40), Color("#26353b"))
+    var ground_visual := ground.get_child(1) as MeshInstance3D
+    ground_visual.material_override = StreetSurface.asphalt_material(Color("#5b6870"), 20.0)
+    var road_north := _visual_box(self, Vector3(0, 0.009, 0), Vector3(10.0, 0.024, 39.0), Color("#303d40"))
+    var road_east := _visual_box(self, Vector3(0, 0.012, 0), Vector3(39.0, 0.024, 10.0), Color("#303d40"))
+    road_north.material_override = StreetSurface.asphalt_material(Color("#6a6d68"), 12.0)
+    road_east.material_override = StreetSurface.asphalt_material(Color("#636b69"), 12.0)
     for i in range(-3, 4):
         _visual_box(self, Vector3(0, 0.031, float(i) * 5.0), Vector3(0.13, 0.02, 2.2), Color("#a59965"))
         _visual_box(self, Vector3(float(i) * 5.0, 0.034, 0), Vector3(2.0, 0.02, 0.13), Color("#a59965"))
