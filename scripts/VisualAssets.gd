@@ -18,6 +18,27 @@ static func _find_animation_player(root: Node) -> AnimationPlayer:
             return found
     return null
 
+static func _grade_zombie(root: Node3D) -> void:
+    # Keep the CC0 model and its atlas, but remove vivid purple/green game-toy
+    # colors that clash with the gritty survivor/reference-video art direction.
+    var shader := load("res://shaders/zombie_grade.gdshader") as Shader
+    if shader == null:
+        return
+    for node in root.find_children("*", "MeshInstance3D", true, false):
+        var visual := node as MeshInstance3D
+        if visual.mesh == null:
+            continue
+        for surface in range(visual.mesh.get_surface_count()):
+            var original := visual.get_active_material(surface)
+            if original is BaseMaterial3D:
+                var texture: Texture2D = original.albedo_texture
+                if texture == null:
+                    continue
+                var graded := ShaderMaterial.new()
+                graded.shader = shader
+                graded.set_shader_parameter("base_texture", texture)
+                visual.set_surface_override_material(surface, graded)
+
 static func attach_character(body: CharacterBody3D, existing_rig: Dictionary, kind: String, variation: int = 0) -> Dictionary:
     var path := _path(kind, variation)
     if kind == "survivor" and ResourceLoader.exists(TACTICAL_SOLDIER):
@@ -37,6 +58,8 @@ static func attach_character(body: CharacterBody3D, existing_rig: Dictionary, ki
     if path == TACTICAL_SOLDIER:
         model.name = "TacticalSoldierAnimated"
     body.add_child(model)
+    if kind == "zombie":
+        _grade_zombie(model)
     var old_visual: Node3D = existing_rig.get("visual")
     if old_visual != null:
         old_visual.visible = false
