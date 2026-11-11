@@ -48,10 +48,9 @@ static func _grade_rifle(model: Node3D) -> void:
             continue
         for surface in range(mesh.mesh.get_surface_count()):
             var material := mesh.get_active_material(surface)
-            var source_tex := ImageTexture.new()
             var image := Image.create_empty(1, 1, false, Image.FORMAT_RGBA8)
             image.fill(Color.WHITE)
-            source_tex = ImageTexture.create_from_image(image)
+            var source_tex: Texture2D = ImageTexture.create_from_image(image)
             if material is BaseMaterial3D and material.albedo_texture != null:
                 source_tex = material.albedo_texture
             var grade := ShaderMaterial.new()
