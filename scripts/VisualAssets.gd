@@ -55,31 +55,51 @@ static func animate(rig: Dictionary, state: String, running: bool = false) -> vo
     var player: AnimationPlayer = rig.get("player")
     if player == null:
         return
-    var names: Array = rig.get("animations", [])
+    var available: Array = rig.get("animations", [])
+    var tactical: bool = rig.get("tactical", false)
     var preferred: Array = []
     match state:
         "walk":
-            preferred = ["run_gun", "run", "sprint", "jog", "walk"] if running else ["walk_gun", "walk", "jog", "run"]
+            if tactical:
+                preferred = ["aim_run", "ready_run", "run", "mocap_run_F", "aim_walk"] if running else ["aim_walk", "ready_walk", "walk", "mocap_walk_F"]
+            else:
+                preferred = ["run_gun", "run", "walk_gun", "walk"] if running else ["walk_gun", "walk", "run"]
         "attack":
-            preferred = ["shoot", "fire", "attack", "rifle"]
+            preferred = ["shoot", "aim_idle", "ready_idle", "idle_gun", "idle"]
         "death":
             preferred = ["death", "die", "dead"]
+        "reload":
+            preferred = ["reload", "aim_idle", "idle_gun", "idle"]
         _:
-            preferred = ["idle_gun", "idle", "breath", "stand"]
+            preferred = ["aim_idle", "ready_idle", "idle", "idle_gun"] if tactical else ["idle_gun", "idle", "stand"]
+
+    # First select exact clip names; do not match "idle" inside "aim_crouch_idle".
+    # A substring selector made the soldier crouch even while standing still.
     var chosen := ""
-    for prefix in preferred:
-        for name in names:
-            if prefix in str(name).to_lower():
+    for requested in preferred:
+        for name in available:
+            var clean := str(name).to_lower()
+            clean = clean.substr(clean.rfind("/") + 1)
+            if clean == str(requested).to_lower():
                 chosen = str(name)
                 break
         if chosen != "":
             break
     if chosen == "":
+        for requested in preferred:
+            for name in available:
+                var clean := str(name).to_lower()
+                if str(requested).to_lower() in clean and not ("crouch" in clean and state != "crouch"):
+                    chosen = str(name)
+                    break
+            if chosen != "":
+                break
+    if chosen == "":
         return
     if rig.get("active", "") == chosen and player.is_playing():
         return
     rig["active"] = chosen
-    player.play(chosen, 0.16, 1.22 if running else 1.0)
+    player.play(chosen, 0.18, 1.13 if running else 1.0)
 
 static func add_prop(parent: Node3D, filename: String, where: Vector3, scale_factor: float = 1.0, y_rotation: float = 0.0) -> Node3D:
     var allowed := ["barrel.gltf", "pallet.gltf", "traffic_barrier.gltf", "container_green.gltf"]
