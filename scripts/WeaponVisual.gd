@@ -1,6 +1,7 @@
 extends RefCounted
 ## Quaternius CC0 rifle follows the imported soldier's animated hand bones.
 const RIFLE_PATH := "res://assets/cc0/rifle.gltf"
+const ArmsIK = preload("res://scripts/ArmsIK.gd")
 const RIFLE_OFFSET := Vector3(0.06, 0.65, 0.27)
 const RIFLE_SCALE := 0.57
 
@@ -130,7 +131,9 @@ static func attach(body: CharacterBody3D, character_art: Dictionary = {}) -> Dic
             for i in range(skeleton.get_bone_count()):
                 names.append(skeleton.get_bone_name(i))
             print("TACTICAL_BONE_LIST: ", names)
+    var arm_ik := ArmsIK.attach(body, skeleton, holder)
     return {
+        "arm_ik": arm_ik,
         "mount": holder,
         "visual": weapon_visual,
         "muzzle": muzzle,
@@ -143,6 +146,9 @@ static func attach(body: CharacterBody3D, character_art: Dictionary = {}) -> Dic
     }
 
 static func align_to_hands(rig: Dictionary, body: CharacterBody3D, delta: float) -> void:
+    if rig.get("arm_ik", {}).get("active", false):
+        # Rifle remains shoulder-locked; IK moves both arms to the two grips.
+        return
     var skeleton: Skeleton3D = rig.get("skeleton")
     var right_idx: int = rig.get("right_hand", -1)
     var left_idx: int = rig.get("left_hand", -1)

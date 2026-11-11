@@ -28,3 +28,6 @@
 
 ## Licenças
 Modelo militar e movimentos conforme `assets/tactical/CREDITS.md`; Quaternius CC0 para arma e props. A versão derivada infectada conserva a licença e a atribuição da fonte original (CC BY 4.0).
+
+## IK de duas maos
+A inspeção das três animações (`ready_idle`, `aim_idle`, `idle`) mostrou que somente posicionar o fuzil no meio das mãos é insuficiente. Esta revisão usa `TwoBoneIK3D` nativo do Godot 4.7 no esqueleto do soldado, com duas metas (empunhadura e guarda-mão) e cotovelos guiados por pole targets. O fuzil permanece no eixo de mira e o sistema IK ajusta os braços; não copia código do projeto de referência externo. A publicação depende de captura real sem deformações.
