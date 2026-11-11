@@ -2,8 +2,8 @@
 
 Shooter de sobrevivencia contra zumbis em **Godot 4.7.2**, com camera 3/4 superior, orientacao independente da mira, ondas de inimigos, impacto dos tiros e cercas destrutiveis. Codigo e modelos procedurais sao originais.
 
-## O que funciona na versao 0.2
-- Sobrevivente low-poly com capacete, colete, mochila, arma e membros animados proceduralmente.
+## Visual e armas da versao 0.5
+- Sobrevivente animado do pacote Quaternius CC0, com **fuzil 3D separado e visivel**, mira e disparos originados no cano da arma. O fallback procedural permanece se os assets nao estiverem instalados.
 - Camera 3/4 ortografica com acompanhamento suave. WASD e rotacao pelo mouse independentes.
 - Disparo continuo (hitscan), particulas de impacto, rastro, recuo, carregador de 32 e recarga temporizada.
 - Zumbis low-poly com variantes, locomocao, perseguidor simples, dano por proximidade e efeitos de morte.
@@ -31,3 +31,6 @@ Shooter de sobrevivencia contra zumbis em **Godot 4.7.2**, com camera 3/4 superi
 
 ## Estado real
 O codigo pode compilar e exportar via GitHub Actions, mas a avaliacao humana da jogabilidade, o equilibrio e a paridade visual com o video exigem playtest. Personagens ainda sao geometria low-poly (nao modelos 3D finais). IA ainda nao usa NavigationServer3D. Sem audio profissional, fases/campanha ou garantia de desempenho em todos os celulares. Nenhum codigo do Pokemon Torre 2 e alterado.
+
+## Problema corrigido — arma invisivel
+O modelo 3D importado substituia o sobrevivente procedural e ocultava a unica arma existente. Agora o build instala separadamente `Rifle.gltf`, posiciona o modelo visivel junto ao torso e conecta tiros/flash ao marcador na ponta do cano. O novo enquadramento 3/4 aproxima o personagem. Validacao de video no navegador e jogo mobile real ainda sao criterios de qualidade pendentes.

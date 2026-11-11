@@ -23,6 +23,7 @@ DESTINATION = pathlib.Path(__file__).resolve().parent.parent / "assets" / "cc0"
 
 ASSETS = {
     "survivor.gltf": "Characters/glTF/Characters_Matt_SingleWeapon.gltf",
+    "rifle.gltf": "Weapons/glTF/Rifle.gltf",
     "zombie_basic.gltf": "Characters/glTF/Zombie_Basic.gltf",
     "zombie_chubby.gltf": "Characters/glTF/Zombie_Chubby.gltf",
     "zombie_ribcage.gltf": "Characters/glTF/Zombie_Ribcage.gltf",

@@ -21,6 +21,15 @@ func _run() -> void:
     all_passed = _check(scene.player != null and scene.camera != null, "Jogador/camera ausentes") and all_passed
     all_passed = _check(scene.camera.projection == Camera3D.PROJECTION_ORTHOGONAL, "Camera 3/4 do video nao configurada") and all_passed
     all_passed = _check(scene.player_rig.has("muzzle") and scene.player_rig.has("left_leg"), "Soldado sem rig ou cano") and all_passed
+    all_passed = _check(scene.weapon_rig.has("mount") and scene.weapon_rig.has("muzzle"), "Rifle 3D nao equipado") and all_passed
+    var gun_mount: Node3D = scene.weapon_rig.get("mount")
+    var gun_muzzle: Marker3D = scene.weapon_rig.get("muzzle")
+    all_passed = _check(gun_mount != null and gun_mount.visible, "Rifle invisivel") and all_passed
+    all_passed = _check(gun_muzzle != null and gun_muzzle.global_position.distance_to(scene.player.global_position) < 2.5, "Boca do cano fora de posicao") and all_passed
+    if ResourceLoader.exists("res://assets/cc0/rifle.gltf"):
+        all_passed = _check(bool(scene.weapon_rig.get("source_ok", false)), "Fuzil GLTF CC0 nao instanciado") and all_passed
+        all_passed = _check(gun_mount.get_node_or_null("VisibleCC0Rifle") != null, "Soldado esta sem o rifle visivel") and all_passed
+
     if not scene.player_art.is_empty():
         scene._animate_survivor(0.016)
         var actual_player: AnimationPlayer = scene.player_art.get("player")
@@ -69,5 +78,5 @@ func _run() -> void:
     if not all_passed:
         quit(1)
         return
-    print("SMOKE_OK: camera 3/4, CC0 animated models, ondas, dano, recarga e cercas destrutiveis")
+    print("SMOKE_OK: rifle 3D CC0 visivel com marcador de cano, camera, animacoes e combate")
     quit(0)

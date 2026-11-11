@@ -6,6 +6,7 @@ const Models = preload("res://scripts/ActorFactory.gd")
 const Artwork = preload("res://scripts/VisualAssets.gd")
 const StreetSurface = preload("res://scripts/SurfaceTextures.gd")
 const MobileJoystick = preload("res://scripts/MobileControls.gd")
+const WeaponVisual = preload("res://scripts/WeaponVisual.gd")
 const WALK_SPEED := 5.2
 const RUN_SPEED := 8.0
 const FIRE_INTERVAL := 0.12
@@ -14,7 +15,7 @@ const MAG_SIZE := 32
 const MAX_ENEMIES := 26
 const WORLD_LIMIT := 17.0
 const MOBILE_AUTO_RANGE := 14.0
-const CAMERA_OFFSET := Vector3(0.0, 9.3, 14.2)
+const CAMERA_OFFSET := Vector3(7.6, 9.3, 12.0)
 
 var rng := RandomNumberGenerator.new()
 var player: CharacterBody3D
@@ -25,6 +26,7 @@ var reticle: Control
 var mobile_controls: Control
 var player_rig: Dictionary = {}
 var player_art: Dictionary = {}
+var weapon_rig: Dictionary = {}
 var zombie_state: Dictionary = {}
 var zombies: Array[CharacterBody3D] = []
 var destructibles: Dictionary = {}
@@ -174,12 +176,14 @@ func _create_player() -> void:
     add_child(player)
     player_rig = Models.survivor(player)
     player_art = Artwork.attach_character(player, player_rig, "survivor")
+    # Imported survivor does not include its own rifle: attach the CC0 model.
+    weapon_rig = WeaponVisual.attach(player)
 
 func _create_camera() -> void:
     camera = Camera3D.new()
     camera.name = "ThreeQuarterCamera"
     camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-    camera.size = 8.8
+    camera.size = 7.9
     camera.near = 0.1
     camera.far = 110.0
     camera.current = true
@@ -294,7 +298,15 @@ func _move_player(delta: float) -> void:
         motion.x += 1.0
     if _mobile_enabled():
         var analog: Vector2 = mobile_controls.get("direction")
-        motion = Vector3(analog.x, 0.0, analog.y).limit_length(1.0)
+        # Landscape joystick is camera-relative; "up" means up on screen
+        # even when the camera moves to the diagonal view of the video.
+        var screen_right := camera.global_transform.basis.x
+        var screen_up := -camera.global_transform.basis.z
+        screen_right.y = 0.0
+        screen_up.y = 0.0
+        screen_right = screen_right.normalized()
+        screen_up = screen_up.normalized()
+        motion = (screen_right * analog.x - screen_up * analog.y).limit_length(1.0)
     else:
         motion = motion.normalized()
     last_move = motion
@@ -395,7 +407,9 @@ func _fire() -> void:
     fire_cooldown = FIRE_INTERVAL
     ammo -= 1
     recoil = 0.21
-    var muzzle: Marker3D = player_rig["muzzle"]
+    # The actual, visible rifle is the source of all gunfire; never shoot
+    # from the invisible placeholder rifle in the procedural fallback.
+    var muzzle: Marker3D = weapon_rig["muzzle"]
     var start: Vector3 = muzzle.global_position
     var destination := start + aim_direction * 31.0
     var query := PhysicsRayQueryParameters3D.create(start, destination)
@@ -413,6 +427,7 @@ func _fire() -> void:
         else:
             _impact(destination, Color("#a1ac9c"), 3)
     _tracer(start, destination)
+    WeaponVisual.animate_fire(weapon_rig)
     _muzzle_flash(start)
 
 func _tracer(start: Vector3, destination: Vector3) -> void:
