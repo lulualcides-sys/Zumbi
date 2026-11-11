@@ -1,0 +1,57 @@
+name: Publish Zombie Outbreak to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'scenes/**'
+      - 'tests/**'
+      - 'project.godot'
+      - 'export_presets.cfg'
+      - '.github/workflows/publish-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: zombie-outbreak-pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot and Web export templates
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: true
+      - name: Import project and validate scripts
+        run: godot --headless --editor --path . --import --quit
+      - name: Run smoke test
+        run: godot --headless --path . --script res://tests/smoke.gd
+      - name: Export Godot 3D game to HTML5
+        run: |
+          mkdir -p build
+          godot --headless --path . --export-release "Web" build/index.html
+          test -s build/index.html
+          touch build/.nojekyll
+      - name: Prepare GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload standalone website
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: build
+      - name: Deploy
+        id: deploy
+        uses: actions/deploy-pages@v4
